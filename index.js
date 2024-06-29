@@ -2,7 +2,6 @@ const express = require("express");
 const mongoose = require("mongoose");
 require('dotenv').config();
 
-
 const app = express();
 
 const port = process.env.PORT || 3000;
@@ -20,10 +19,24 @@ db.once('open', () => {
   console.log('Conectado ao MongoDB.');
 });
 
-app.get('/', (req, res) => {
-  res.send('Hello, World! , Api ta funcionando bem!');
-})
+// Model Produto
+const Produto = mongoose.model('Produto', {
+  name: String,
+  tag: String,
+  description: String,
+  referencia: Number,
+  image: String,
+});
 
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
-})
+app.get('/produtos', async (req, res) => {
+  try {
+    const produtos = await Produto.find();
+    res.json(produtos);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
