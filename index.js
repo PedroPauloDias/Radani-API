@@ -20,8 +20,21 @@ db.once('open', () => {
   console.log('Conectado ao MongoDB.');
 });
 
-app.get('/', (req, res) => {
-  res.send('Hello, World! , Api ta funcionando normal!');
+// Scheema produtos
+const Produto = mongoose.model('Produto', {
+  name: String,
+  tag: String,
+  description: String,
+  ref: Number,
+  image: String,
+ 
+});
+
+
+
+app.get('/produtos',async (req, res) => {
+  const Produtos = await Produto.find()
+  res.send(Produtos);
 })
 
 app.listen(3000, () => {
