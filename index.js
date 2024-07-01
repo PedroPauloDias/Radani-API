@@ -30,11 +30,23 @@ const Produto = mongoose.model('Produto', {
  
 });
 
+// Scheema produtos
+const Categoria = mongoose.model('Categoria', {
+  name: String,
+  image: String,
+ 
+});
+
 
 
 app.get('/produtos',async (req, res) => {
   const Produtos = await Produto.find()
   res.send(Produtos);
+})
+
+app.get('/categorias',async (req, res) => {
+  const Categorias = await Categoria.find()
+  res.send(Categorias);
 })
 
 app.listen(3000, () => {
