@@ -61,6 +61,29 @@ app.get('/produtos',async (req, res) => {
   res.send(Produtos);
 })
 
+app.get('/produtos', async (req, res) => {
+  // Obter parâmetros de consulta da requisição
+  const tag = req.query.tag;
+  try {
+    // Consultar o registro da  tag com base nos parâmetros fornecidos
+    const searchTag = await tag.findOne({ 
+      tagName: tag, 
+      
+    });
+    // Se a tag foi encontrada, retorna o registro
+    if (tag) {
+      return res.json(tag);
+    } else {
+      // Se a tag não foi encontrada, retorna uma mensagem de erro
+      return res.status(404).json({ message: "Registro não encontrado para a tag fornecida" });
+    }
+  } catch (error) {
+    console.error("Erro ao buscar registro da tag:", error);
+    // Retornar uma resposta de erro com status 500 e uma mensagem personalizada
+    return res.status(500).json({ message: "Erro ao buscar registro da tag" });
+  }
+});
+
 app.get('/categorias',async (req, res) => {
   const Categorias = await Categoria.find()
   res.send(Categorias);
