@@ -84,6 +84,13 @@ app.get('/produtos', async (req, res) => {
   }
 });
 
+
+// Buscar por Id
+app.get("/produtos/:id",  async (req, res) => {
+  const Produtos = await Produto.findById(req.params.id);
+  return res.send(Produto);  
+});
+
 app.get('/categorias',async (req, res) => {
   const Categorias = await Categoria.find()
   res.send(Categorias);
