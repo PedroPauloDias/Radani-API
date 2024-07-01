@@ -1,9 +1,24 @@
 const express = require("express");
 const mongoose = require("mongoose");
 require('dotenv').config();
-
+const cors = require('cors');
 
 const app = express();
+
+// Configuração do CORS
+const corsOptions = {
+  origin: (origin, callback) => {
+    const allowedOrigins = ["https://localhost:3000", "https://radani.vercel.app/"];
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Não permitido pelo CORS'));
+    }
+  },
+  optionsSuccessStatus: 200,
+};
+
+
 
 const port = process.env.PORT || 3000;
 
