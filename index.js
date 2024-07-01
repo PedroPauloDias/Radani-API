@@ -8,7 +8,7 @@ const app = express();
 // Configuração do CORS
 const corsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = ["https://localhost:3000", "https://radani.vercel.app/"];
+    const allowedOrigins = ["https://localhost:3000", "https://radani.vercel.app"];
     if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
       callback(null, true);
     } else {
