@@ -12,7 +12,7 @@ const corsOptions = {
     if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
       callback(null, true);
     } else {
-      callback(new Error('Não permitido pelo CORS'));
+      callback(new Error('Não permitido CORS'));
     }
   },
   optionsSuccessStatus: 200,
