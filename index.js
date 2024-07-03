@@ -61,9 +61,10 @@ app.get('/produtos',async (req, res) => {
   res.send(Produtos);
 })
 
-app.get('/produtos', async (req, res) => {
+app.get('/produtos/:tag', async (req, res) => {
   // Obter parâmetros de consulta da requisição
-  const tag = req.query.tag;
+  const tag = req.params.tag;
+  
   try {
     // Consultar o registro da  tag com base nos parâmetros fornecidos
     const searchTag = await tag.findOne({ 
