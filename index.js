@@ -88,8 +88,9 @@ app.get('/produtos/:tag', async (req, res) => {
 
 // Buscar por Id
 app.get("/produtos/:id", async (req, res) => {
+  const id = req.params.id; // Renomeando para 'id' (minúsculo) para consistência
   try {
-    const produto = await Produto.findById(req.params.id);
+    const produto = await Produto.findById(id);
     if (!produto) {
       return res.status(404).send({ message: "Produto não encontrado" });
     }
@@ -99,7 +100,6 @@ app.get("/produtos/:id", async (req, res) => {
     return res.status(500).send({ message: "Erro ao buscar produto" });
   }
 });
-
 app.get('/categorias',async (req, res) => {
   const Categorias = await Categoria.find()
   res.send(Categorias);
