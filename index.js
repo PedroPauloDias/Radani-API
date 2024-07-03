@@ -61,17 +61,23 @@ app.get('/produtos',async (req, res) => {
   res.send(Produtos);
 })
 
-// Buscar por Id
-app.get("/api/players/:id",  async (req, res) => {
-  const produto = await Produto.findById(req.params.id);
-  return res.send(produto);  
-});
 
+app.get("/produtos/:id", async (req, res) => {
+  try {
+    const produto = await Produto.findById(req.params.id);
+    if (!produto) {
+      return res.status(404).send({ message: "Produto não encontrado" });
+    }
+    return res.send(produto);
+  } catch (error) {
+    console.error("Erro ao buscar produto:", error);
+    return res.status(500).send({ message: "Erro ao buscar produto pelo id " });
+  }
+});
 
 app.get('/produtos/:tag', async (req, res) => {
   // Obter parâmetros de consulta da requisição
-  const tag = req.params.tag;
-  
+  const tag = req.query.tag;
   try {
     // Consultar o registro da  tag com base nos parâmetros fornecidos
     const searchTag = await tag.findOne({ 
@@ -93,11 +99,12 @@ app.get('/produtos/:tag', async (req, res) => {
 });
 
 
+// Buscar por Id
+
 app.get('/categorias',async (req, res) => {
   const Categorias = await Categoria.find()
   res.send(Categorias);
 })
-
 
 app.listen(3000, () => {
   console.log('Server is running on port 3000');
