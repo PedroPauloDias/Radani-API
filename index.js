@@ -62,18 +62,9 @@ app.get('/produtos',async (req, res) => {
 })
 
 // Buscar por Id
-app.get("/produtos/:id", async (req, res) => {
-  const id = req.params.id; // Renomeando para 'id' (minúsculo) para consistência
-  try {
-    const produto = await Produto.findById(id);
-    if (!produto) {
-      return res.status(404).send({ message: "Produto não encontrado" });
-    }
-    return res.send(produto);
-  } catch (error) {
-    console.error("Erro ao buscar produto:", error);
-    return res.status(500).send({ message: "Erro ao buscar produto" });
-  }
+app.get("/api/players/:id",  async (req, res) => {
+  const produto = await Produto.findById(req.params.id);
+  return res.send(produto);  
 });
 
 
