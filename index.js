@@ -75,7 +75,7 @@ app.get("/produtos/:id", async (req, res) => {
   }
 });
 
-app.get('/produtos/tag/:tag', async (req, res) => {
+app.get('/:tag', async (req, res) => {
   const tag = req.params.tag; // Obter o parâmetro da rota corretamente
   
   try {
