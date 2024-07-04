@@ -75,11 +75,12 @@ app.get("/produtos/:id", async (req, res) => {
   }
 });
 
-app.get('/produtos/:tag', async (req, res) => {
-  const tag = req.params.tag; // Obter o parâmetro da rota
+app.get('/produtos/tag/:tag', async (req, res) => {
+  const tag = req.params.tag; // Obter o parâmetro da rota corretamente
+  
   try {
     // Consultar o registro com base no parâmetro fornecido
-    const searchTag = await Produto.findOne({ tag: tag });
+    const searchTag = await Produto.find({ tag: tag }); // Ou Produto.findOne({ tag: tag }) dependendo da sua lógica
     
     // Verificar se a tag foi encontrada
     if (searchTag) {
