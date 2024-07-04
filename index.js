@@ -75,7 +75,14 @@ app.get("/produtos/:id", async (req, res) => {
   }
 });
 
-app.get('/:tag', async (req, res) => {
+
+app.get('/categorias',async (req, res) => {
+  const Categorias = await Categoria.find()
+  res.send(Categorias);
+})
+
+
+app.get('/categorias/:tag', async (req, res) => {
   const tag = req.params.tag; // Obter o parâmetro da rota corretamente
   
   try {
@@ -97,12 +104,8 @@ app.get('/:tag', async (req, res) => {
 });
 
 
-// Buscar por Id
 
-app.get('/categorias',async (req, res) => {
-  const Categorias = await Categoria.find()
-  res.send(Categorias);
-})
+
 
 app.listen(3000, () => {
   console.log('Server is running on port 3000');
