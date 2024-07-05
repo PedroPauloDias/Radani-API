@@ -5,6 +5,15 @@ const cors = require('cors');
 
 const app = express();
 
+export const maxDuration = 30; 
+export const dynamic = 'force-dynamic';
+ 
+export function GET(request) {
+  return new Response('Vercel', {
+    status: 200,
+  });
+}
+
 // Configuração do CORS
 const corsOptions = {
   origin: (origin, callback) => {
