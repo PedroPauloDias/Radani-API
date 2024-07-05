@@ -5,19 +5,12 @@ const cors = require('cors');
 
 const app = express();
 
-export const maxDuration = 30; 
-export const dynamic = 'force-dynamic';
- 
-export function GET(request) {
-  return new Response('Vercel test', {
-    status: 200,
-  });
-}
 
-// Configuração do CORS
+ 
+
 const corsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = ["http://localhost:3000", "https://radani.vercel.app", "https://radani-api.vercel.app/categorias", "https://radani-api.vercel.app/produtos"];
+    const allowedOrigins = ['http://localhost:3000','http://localhost:3001', 'https://radani.vercel.app'];
     if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
       callback(null, true);
     } else {
@@ -27,8 +20,8 @@ const corsOptions = {
   optionsSuccessStatus: 200,
 };
 
-
 app.use(cors(corsOptions));
+
 
 
 const port = process.env.PORT || 3000;
