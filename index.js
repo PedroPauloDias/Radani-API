@@ -9,7 +9,7 @@ export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
  
 export function GET(request) {
-  return new Response('Vercel', {
+  return new Response('Vercel test', {
     status: 200,
   });
 }
