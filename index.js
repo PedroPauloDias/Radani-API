@@ -5,13 +5,21 @@ const cors = require('cors');
 
 const app = express();
 
-app.use(cors());
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
-});
+// Configuração do CORS
+const corsOptions = {
+  origin: (origin, callback) => {
+    const allowedOrigins = ["http://localhost:3000", "https://radani.vercel.app", "https://radani-api.vercel.app/categorias", "https://radani-api.vercel.app/produtos"];
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Não permitido CORS'));
+    }
+  },
+  optionsSuccessStatus: 200,
+};
+
+
+app.use(cors(corsOptions));
 
 
 const port = process.env.PORT || 3000;
