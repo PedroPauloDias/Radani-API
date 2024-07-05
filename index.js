@@ -108,7 +108,7 @@ app.get('/categorias/:tag', async (req, res) => {
   } catch (error) {
     console.error("Erro ao buscar registro da tag:", error);
     // Retorna uma resposta de erro 500 em caso de erro na consulta
-    return res.status(500).json({ message: "Erro ao buscar registro da tag" });
+    return res.status(500).json({ message: "Erro ao buscar produto por tag" });
   }
 });
 
