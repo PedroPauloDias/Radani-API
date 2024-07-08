@@ -45,7 +45,15 @@ const Produto = mongoose.model('Produto', {
   tag: String,
   description: String,
   ref: Number,
-  image: String,
+  image: {
+    amarelo: String,
+    azul: String,
+    branco: String,
+    rosa: String,
+    verde: String
+  },
+  cod: String,
+  sizes:String 
  
 });
 
