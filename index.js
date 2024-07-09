@@ -117,24 +117,37 @@ app.get('/categorias', async (req, res) => {
 });
 
 
-app.get('/categorias/:tag', async (req, res) => {
-  const tag = req.params.tag; // Obter o parâmetro da rota corretamente
-  
+// Rota para buscar produtos por tag com paginação
+router.get('/categorias/:tag', async (req, res) => {
+  const tag = req.params.tag;
+  const page = parseInt(req.query.page) || 1; // Página atual, padrão: 1
+  const pageSize = parseInt(req.query.pageSize) || 10; // Tamanho da página, padrão: 10
+
   try {
-    // Consultar o registro com base no parâmetro fornecido
-    const searchTag = await Produto.find({ tag: tag }); // Ou Produto.findOne({ tag: tag }) dependendo da sua lógica
-    
-    // Verificar se a tag foi encontrada
-    if (searchTag) {
-      return res.json(searchTag); // Retorna o registro encontrado
+    // Consulta os produtos com base na tag e aplica a paginação
+    const produtos = await Produto.find({ tag: tag })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize);
+
+    // Conta o total de produtos com a tag especificada
+    const totalProdutos = await Produto.countDocuments({ tag: tag });
+
+    // Verifica se há produtos encontrados
+    if (produtos.length > 0) {
+      // Retorna os produtos encontrados e informações de paginação
+      return res.json({
+        produtos,
+        totalPages: Math.ceil(totalProdutos / pageSize),
+        currentPage: page
+      });
     } else {
-      // Se não encontrou, retorna uma mensagem de erro 404
-      return res.status(404).json({ message: `Produto com a tag '${tag}' não encontrado` });
+      // Se não encontrar produtos, retorna um erro 404
+      return res.status(404).json({ message: `Nenhum produto encontrado com a tag '${tag}'` });
     }
   } catch (error) {
-    console.error("Erro ao buscar registro da tag:", error);
-    // Retorna uma resposta de erro 500 em caso de erro na consulta
-    return res.status(500).json({ message: "Erro ao buscar produto por tag" });
+    console.error("Erro ao buscar produtos por tag:", error);
+    // Retorna um erro 500 em caso de falha na consulta
+    return res.status(500).json({ message: "Erro ao buscar produtos por tag" });
   }
 });
 
