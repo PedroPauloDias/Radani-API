@@ -117,8 +117,7 @@ app.get('/categorias', async (req, res) => {
 });
 
 
-// Rota para buscar produtos por tag com paginação
-router.get('/categorias/:tag', async (req, res) => {
+app.get('/categorias/:tag', async (req, res) => {
   const tag = req.params.tag;
   const page = parseInt(req.query.page) || 1; // Página atual, padrão: 1
   const pageSize = parseInt(req.query.pageSize) || 10; // Tamanho da página, padrão: 10
@@ -150,7 +149,6 @@ router.get('/categorias/:tag', async (req, res) => {
     return res.status(500).json({ message: "Erro ao buscar produtos por tag" });
   }
 });
-
 
 
 
