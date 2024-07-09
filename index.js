@@ -88,10 +88,33 @@ app.get("/produtos/:id", async (req, res) => {
 });
 
 
-app.get('/categorias',async (req, res) => {
-  const Categorias = await Categoria.find()
-  res.send(Categorias);
-})
+app.get('/categorias', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1; // Página atual, padrão é 1
+    const pageSize = parseInt(req.query.pageSize) || 10; // Tamanho da página, padrão é 10
+
+    // Consultar categorias com paginação usando Mongoose
+    const categorias = await Categoria.find()
+      .skip((page - 1) * pageSize) // Pular itens da página anterior
+      .limit(pageSize); // Limitar a quantidade de resultados por página
+
+    // Contar o total de categorias (para calcular totalPages)
+    const totalItems = await Categoria.countDocuments();
+
+    // Calcular totalPages
+    const totalPages = Math.ceil(totalItems / pageSize);
+
+    // Retornar os dados e metadados de paginação
+    res.json({
+      data: categorias,
+      totalPages: totalPages,
+      totalItems: totalItems
+    });
+  } catch (error) {
+    console.error('Erro ao buscar categorias:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
 
 
 app.get('/categorias/:tag', async (req, res) => {
