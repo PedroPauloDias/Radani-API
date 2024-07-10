@@ -132,6 +132,7 @@ app.get('/produtos/:id', async (req, res) => {
 
 
 // Rota para buscar produtos por nome, tag, ref ou descrição
+// Rota para buscar produtos por nome, tag, ref ou descrição
 app.get('/produtos/busca', async (req, res) => {
   const query = req.query.q; // Recebe o parâmetro de consulta 'q' da URL
 
