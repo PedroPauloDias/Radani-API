@@ -88,6 +88,82 @@ app.get("/produtos/:id", async (req, res) => {
 });
 
 
+
+// BUSCA DOS  ITENS POR TAG / NOME OU REF
+
+app.get('/produtos/search', async (req, res) => {
+  const query = req.query.q;
+  let page = parseInt(req.query.page) || 1; // Página atual, padrão: 1
+  const pageSize = parseInt(req.query.pageSize) || 10; // Tamanho da página, padrão: 10
+
+  try {
+    // Consulta os produtos que correspondem ao nome, tag ou ref
+    const produtosQuery = Produto.find({
+      $or: [
+        { name: { $regex: query, $options: 'i' } }, // Busca por nome (case insensitive)
+        { tag: { $regex: query, $options: 'i' } },  // Busca por tag (case insensitive)
+        { ref: query }                             // Busca por referência exata
+      ]
+    });
+
+    // Conta o total de produtos encontrados
+    const totalProdutos = await Produto.countDocuments({
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { tag: { $regex: query, $options: 'i' } },
+        { ref: query }
+      ]
+    });
+
+    // Verifica se há produtos encontrados
+    if (totalProdutos === 0) {
+      return res.status(404).json({ message: `Nenhum produto encontrado com a busca '${query}'` });
+    }
+
+    // Calcula o número total de páginas
+    const totalPages = Math.ceil(totalProdutos / pageSize);
+
+    // Verifica se a página solicitada é válida
+    if (page < 1) {
+      page = 1;
+    } else if (page > totalPages) {
+      page = totalPages;
+    }
+
+    // Aplica a paginação
+    const produtos = await produtosQuery
+      .skip((page - 1) * pageSize)
+      .limit(pageSize);
+
+    // Verifica se há uma próxima página
+    let nextPage = null;
+    if (page < totalPages) {
+      nextPage = page + 1;
+    }
+
+    // Verifica se há uma página anterior
+    let prevPage = null;
+    if (page > 1) {
+      prevPage = page - 1;
+    }
+
+    // Retorna os produtos encontrados e informações de paginação
+    return res.json({
+      produtos,
+      totalPages,
+      currentPage: page,
+      nextPage,
+      prevPage
+    });
+
+  } catch (error) {
+    console.error("Erro ao buscar produtos por nome, tag ou ref:", error);
+    // Retorna um erro 500 em caso de falha na consulta
+    return res.status(500).json({ message: "Erro ao buscar produtos por nome, tag ou ref" });
+  }
+});
+
+
 app.get('/categorias', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1; // Página atual, padrão é 1
