@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 require('dotenv').config();
 const cors = require('cors');
+const { ObjectId } = require('mongoose').Types;
 
 const app = express();
 
@@ -73,7 +74,31 @@ app.get('/produtos',async (req, res) => {
   res.send(Produtos);
 })
 
+// Rota para buscar um produto pelo ID
+app.get('/produtos/:id', async (req, res) => {
+  const id = req.params.id;
 
+  // Verifica se o ID fornecido é um ObjectId válido
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "ID do produto inválido" });
+  }
+
+  try {
+    const produto = await Produto.findById(id);
+
+    if (!produto) {
+      return res.status(404).json({ message: "Produto não encontrado" });
+    }
+
+    // Retorna o produto encontrado
+    res.json(produto);
+
+  } catch (error) {
+    console.error("Erro ao buscar produto pelo ID:", error);
+    // Retorna um erro 500 em caso de falha na consulta
+    res.status(500).json({ message: "Erro ao buscar produto pelo ID" });
+  }
+});
 
 // BUSCA DOS  ITENS POR TAG / NOME OU REF
 app.get('/produtos/:query', async (req, res, next) => {
@@ -132,18 +157,18 @@ app.get('/produtos/:query', async (req, res, next) => {
 // });
 
 
-app.get("/produtos/:id", async (req, res) => {
-  try {
-    const produto = await Produto.findById(req.params.id);
-    if (!produto) {
-      return res.status(404).send({ message: "Produto não encontrado" });
-    }
-    return res.send(produto);
-  } catch (error) {
-    console.error("Erro ao buscar produto:", error);
-    return res.status(500).send({ message: "Erro ao buscar produto pelo id " });
-  }
-});
+// app.get("/produtos/:id", async (req, res) => {
+//   try {
+//     const produto = await Produto.findById(req.params.id);
+//     if (!produto) {
+//       return res.status(404).send({ message: "Produto não encontrado" });
+//     }
+//     return res.send(produto);
+//   } catch (error) {
+//     console.error("Erro ao buscar produto:", error);
+//     return res.status(500).send({ message: "Erro ao buscar produto pelo id " });
+//   }
+// });
 
 
 app.get('/categorias', async (req, res) => {
