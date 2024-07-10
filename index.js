@@ -74,18 +74,7 @@ app.get('/produtos',async (req, res) => {
 })
 
 
-app.get("/produtos/:id", async (req, res) => {
-  try {
-    const produto = await Produto.findById(req.params.id);
-    if (!produto) {
-      return res.status(404).send({ message: "Produto não encontrado" });
-    }
-    return res.send(produto);
-  } catch (error) {
-    console.error("Erro ao buscar produto:", error);
-    return res.status(500).send({ message: "Erro ao buscar produto pelo id " });
-  }
-});
+
 
 
 
@@ -162,6 +151,19 @@ app.get('/produtos/busca/:query', async (req, res) => {
   }
 });
 
+
+app.get("/produtos/:id", async (req, res) => {
+  try {
+    const produto = await Produto.findById(req.params.id);
+    if (!produto) {
+      return res.status(404).send({ message: "Produto não encontrado" });
+    }
+    return res.send(produto);
+  } catch (error) {
+    console.error("Erro ao buscar produto:", error);
+    return res.status(500).send({ message: "Erro ao buscar produto pelo id " });
+  }
+});
 
 
 app.get('/categorias', async (req, res) => {
