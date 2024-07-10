@@ -45,7 +45,7 @@ const Produto = mongoose.model('Produto', {
   name: String,
   tag: String,
   description: String,
-  ref: Number,
+  ref: String,
   image: {
     cores: {
       amarelo: String,
@@ -74,40 +74,95 @@ app.get('/produtos',async (req, res) => {
   res.send(Produtos);
 })
 
-
-app.get('/produtos/:query', async (req, res, next) => {
+// Rota para buscar produtos por query (nome, tag ou ref)
+app.get('/produtos/busca/:query', async (req, res) => {
   const query = req.params.query;
+  let page = parseInt(req.query.page) || 1; // Página atual, padrão é 1
+  const pageSize = parseInt(req.query.pageSize) || 10; // Tamanho da página, padrão é 10
 
-  // Verifica se o parâmetro pode ser interpretado como um ObjectId válido
-  if (ObjectId.isValid(query)) {
-    return next(); // Passa para a próxima rota se for um ObjectId válido
-  }
-
-  // Se não for um ObjectId válido, trata como uma busca por nome, tag ou ref
   try {
-    // Consulta os produtos que correspondem ao nome, tag ou ref
-    const produtos = await Produto.find({
-      $or: [
-        { name: { $regex: query, $options: 'i' } }, // Busca por nome (case insensitive)
-        { tag: { $regex: query, $options: 'i' } },  // Busca por tag (case insensitive)
-        { ref: query }                             // Busca por referência exata
-      ]
-    });
+    // Verifica se query pode ser interpretada como um número válido para ref
+    const parsedRef = parseInt(query);
+    const isRef = !isNaN(parsedRef);
 
-    // Verifica se há produtos encontrados
+    let produtos;
+    let totalProdutos;
+
+    if (isRef) {
+      // Se for ref, busca por ref como string
+      [produtos, totalProdutos] = await Promise.all([
+        Produto.find({ ref: query })
+          .skip((page - 1) * pageSize)
+          .limit(pageSize),
+        Produto.countDocuments({ ref: query })
+      ]);
+    } else {
+      // Caso contrário, busca por nome ou tag (case insensitive)
+      const regexQuery = new RegExp(query, 'i');
+      [produtos, totalProdutos] = await Promise.all([
+        Produto.find({
+          $or: [
+            { name: { $regex: regexQuery } },
+            { tag: { $regex: regexQuery } }
+          ]
+        })
+          .skip((page - 1) * pageSize)
+          .limit(pageSize),
+        Produto.countDocuments({
+          $or: [
+            { name: { $regex: regexQuery } },
+            { tag: { $regex: regexQuery } }
+          ]
+        })
+      ]);
+    }
+
+    // Verifica se encontrou produtos
     if (produtos.length === 0) {
       return res.status(404).json({ message: `Nenhum produto encontrado com a busca '${query}'` });
     }
 
-    // Retorna os produtos encontrados
-    res.json(produtos);
+    // Calcula o número total de páginas
+    const totalPages = Math.ceil(totalProdutos / pageSize);
+
+    // Verifica se a página solicitada é válida
+    if (page < 1) {
+      page = 1;
+    } else if (page > totalPages) {
+      page = totalPages;
+    }
+
+    // Aplica a paginação corrigida
+    produtos = produtos.slice((page - 1) * pageSize, page * pageSize);
+
+    // Verifica se há uma próxima página
+    let nextPage = null;
+    if (page < totalPages) {
+      nextPage = page + 1;
+    }
+
+    // Verifica se há uma página anterior
+    let prevPage = null;
+    if (page > 1) {
+      prevPage = page - 1;
+    }
+
+    // Retorna os produtos encontrados e informações de paginação
+    res.json({
+      produtos,
+      totalPages,
+      currentPage: page,
+      totalItems: totalProdutos,
+      nextPage,
+      prevPage
+    });
 
   } catch (error) {
     console.error("Erro ao buscar produtos por nome, tag ou ref:", error);
-    // Retorna um erro 500 em caso de falha na consulta
     res.status(500).json({ message: "Erro ao buscar produtos por nome, tag ou ref" });
   }
 });
+
 
 // Rota para buscar um produto pelo ID
 app.get('/produtos/:id', async (req, res) => {
@@ -131,40 +186,6 @@ app.get('/produtos/:id', async (req, res) => {
 });
 
 
-// Rota para buscar produtos por nome, tag, ref ou descrição
-// Rota para buscar produtos por nome, tag, ref ou descrição
-app.get('/produtos/busca', async (req, res) => {
-  const query = req.query.q; // Recebe o parâmetro de consulta 'q' da URL
-
-  if (!query) {
-    return res.status(400).json({ message: "Parâmetro 'q' não encontrado na consulta" });
-  }
-
-  try {
-    // Consulta os produtos que correspondem ao nome, tag, ref ou parte da descrição
-    const produtos = await Produto.find({
-      $or: [
-        { name: { $regex: query, $options: 'i' } }, // Busca por nome (case insensitive)
-        { tag: { $regex: query, $options: 'i' } },  // Busca por tag (case insensitive)
-        { ref: query },                             // Busca por referência exata
-        { description: { $regex: query, $options: 'i' } } // Busca por descrição (case insensitive)
-      ]
-    });
-
-    // Verifica se há produtos encontrados
-    if (produtos.length === 0) {
-      return res.status(404).json({ message: `Nenhum produto encontrado com a busca '${query}'` });
-    }
-
-    // Retorna os produtos encontrados
-    res.json(produtos);
-
-  } catch (error) {
-    console.error("Erro ao buscar produtos por nome, tag, ref ou descrição:", error);
-    // Retorna um erro 500 em caso de falha na consulta
-    res.status(500).json({ message: "Erro ao buscar produtos por nome, tag, ref ou descrição" });
-  }
-});
 
 
 
