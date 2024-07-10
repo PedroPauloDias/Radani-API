@@ -90,9 +90,8 @@ app.get("/produtos/:id", async (req, res) => {
 
 
 // BUSCA DOS  ITENS POR TAG / NOME OU REF
-
-app.get('/produtos/search', async (req, res) => {
-  const query = req.query.q;
+app.get('/produtos/busca/:query', async (req, res) => {
+  const query = req.params.query;
   let page = parseInt(req.query.page) || 1; // Página atual, padrão: 1
   const pageSize = parseInt(req.query.pageSize) || 10; // Tamanho da página, padrão: 10
 
@@ -162,6 +161,7 @@ app.get('/produtos/search', async (req, res) => {
     return res.status(500).json({ message: "Erro ao buscar produtos por nome, tag ou ref" });
   }
 });
+
 
 
 app.get('/categorias', async (req, res) => {
