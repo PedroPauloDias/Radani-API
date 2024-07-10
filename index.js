@@ -158,10 +158,12 @@ app.get('/produtos/busca/:query', async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Erro ao buscar produtos por nome, tag ou ref:", error);
-    res.status(500).json({ message: "Erro ao buscar produtos por nome, tag ou ref" });
+    console.error("Erro ao buscar produtos por query:", error);
+    // Retorna um erro 500 em caso de falha na consulta
+    return res.status(500).json({ message: "Erro ao buscar produtos por query" });
   }
 });
+
 
 
 // Rota para buscar um produto pelo ID
