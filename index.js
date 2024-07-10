@@ -73,6 +73,8 @@ app.get('/produtos',async (req, res) => {
   const Produtos = await Produto.find()
   res.send(Produtos);
 })
+
+
 app.get('/produtos/:query', async (req, res, next) => {
   const query = req.params.query;
 
@@ -127,6 +129,42 @@ app.get('/produtos/:id', async (req, res) => {
     res.status(500).json({ message: "Erro ao buscar produto pelo ID" });
   }
 });
+
+
+// Rota para buscar produtos por nome, tag, ref ou descrição
+app.get('/produtos/busca', async (req, res) => {
+  const query = req.query.q; // Recebe o parâmetro de consulta 'q' da URL
+
+  if (!query) {
+    return res.status(400).json({ message: "Parâmetro 'q' não encontrado na consulta" });
+  }
+
+  try {
+    // Consulta os produtos que correspondem ao nome, tag, ref ou parte da descrição
+    const produtos = await Produto.find({
+      $or: [
+        { name: { $regex: query, $options: 'i' } }, // Busca por nome (case insensitive)
+        { tag: { $regex: query, $options: 'i' } },  // Busca por tag (case insensitive)
+        { ref: query },                             // Busca por referência exata
+        { description: { $regex: query, $options: 'i' } } // Busca por descrição (case insensitive)
+      ]
+    });
+
+    // Verifica se há produtos encontrados
+    if (produtos.length === 0) {
+      return res.status(404).json({ message: `Nenhum produto encontrado com a busca '${query}'` });
+    }
+
+    // Retorna os produtos encontrados
+    res.json(produtos);
+
+  } catch (error) {
+    console.error("Erro ao buscar produtos por nome, tag, ref ou descrição:", error);
+    // Retorna um erro 500 em caso de falha na consulta
+    res.status(500).json({ message: "Erro ao buscar produtos por nome, tag, ref ou descrição" });
+  }
+});
+
 
 
 // Rota para buscar um produto pelo ID
