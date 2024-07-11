@@ -75,39 +75,36 @@ app.get('/produtos',async (req, res) => {
 })
 
 // Rota para buscar produtos por query (nome, tag ou ref)
+
 app.get('/produtos/busca/:query', async (req, res) => {
   const query = req.params.query;
   let page = parseInt(req.query.page) || 1; // Página atual, padrão é 1
   const pageSize = parseInt(req.query.pageSize) || 10; // Tamanho da página, padrão é 10
 
   try {
-    // Verifica se query pode ser interpretada como um número válido para ref
-    const parsedRef = parseInt(query);
-    const isRef = !isNaN(parsedRef);
-
-    let produtos;
+    let produtosQuery;
     let totalProdutos;
 
-    if (isRef) {
-      // Se for ref, busca por ref como string
-      [produtos, totalProdutos] = await Promise.all([
-        Produto.find({ ref: query })
-          .skip((page - 1) * pageSize)
-          .limit(pageSize),
-        Produto.countDocuments({ ref: query })
-      ]);
-    } else {
-      // Caso contrário, busca por nome ou tag (case insensitive)
+    if (!query) {
+      return res.status(400).json({ message: 'A consulta não pode ser vazia' });
+    }
+
+    // Tenta encontrar produtos pelo ref
+    [produtosQuery, totalProdutos] = await Promise.all([
+      Produto.find({ ref: query }).skip((page - 1) * pageSize).limit(pageSize),
+      Produto.countDocuments({ ref: query })
+    ]);
+
+    // Se não encontrou produtos pelo ref, tenta buscar por nome ou tag
+    if (produtosQuery.length === 0) {
       const regexQuery = new RegExp(query, 'i');
-      [produtos, totalProdutos] = await Promise.all([
+      [produtosQuery, totalProdutos] = await Promise.all([
         Produto.find({
           $or: [
             { name: { $regex: regexQuery } },
             { tag: { $regex: regexQuery } }
           ]
-        })
-          .skip((page - 1) * pageSize)
-          .limit(pageSize),
+        }).skip((page - 1) * pageSize).limit(pageSize),
         Produto.countDocuments({
           $or: [
             { name: { $regex: regexQuery } },
@@ -118,7 +115,7 @@ app.get('/produtos/busca/:query', async (req, res) => {
     }
 
     // Verifica se encontrou produtos
-    if (produtos.length === 0) {
+    if (produtosQuery.length === 0) {
       return res.status(404).json({ message: `Nenhum produto encontrado com a busca '${query}'` });
     }
 
@@ -132,29 +129,14 @@ app.get('/produtos/busca/:query', async (req, res) => {
       page = totalPages;
     }
 
-    // Aplica a paginação corrigida
-    produtos = produtos.slice((page - 1) * pageSize, page * pageSize);
-
-    // Verifica se há uma próxima página
-    let nextPage = null;
-    if (page < totalPages) {
-      nextPage = page + 1;
-    }
-
-    // Verifica se há uma página anterior
-    let prevPage = null;
-    if (page > 1) {
-      prevPage = page - 1;
-    }
-
     // Retorna os produtos encontrados e informações de paginação
-    res.json({
-      produtos,
+    return res.json({
+      produtos: produtosQuery,
       totalPages,
       currentPage: page,
       totalItems: totalProdutos,
-      nextPage,
-      prevPage
+      nextPage: page < totalPages ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null
     });
 
   } catch (error) {
@@ -163,7 +145,6 @@ app.get('/produtos/busca/:query', async (req, res) => {
     return res.status(500).json({ message: "Erro ao buscar produtos por query" });
   }
 });
-
 
 
 // Rota para buscar um produto pelo ID
