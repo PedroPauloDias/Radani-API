@@ -11,7 +11,7 @@ const app = express();
 
 const corsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = ['http://localhost:3000','http://localhost:3001', 'https://radani.vercel.app','https://adm-radani.vercel.app/']
+    const allowedOrigins = ['http://localhost:3000','http://localhost:3001', 'https://radani.vercel.app','https://adm-radani.vercel.app']
     if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
       callback(null, true);
     } else {
