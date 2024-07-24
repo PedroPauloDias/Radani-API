@@ -266,10 +266,18 @@ app.get('/categorias/:tag', async (req, res) => {
       page = totalPages;
     }
 
-    // Aplica a paginação
-    const produtos = await produtosQuery
-      .skip((page - 1) * pageSize)
-      .limit(pageSize);
+    // Aplica a paginação e ordenação
+    const produtos = await Produto.aggregate([
+      { $match: { tag: tag } }, // Filtra os produtos pela tag
+      {
+        $addFields: {
+          refNum: { $toInt: "$ref" } // Converte o campo ref de string para número
+        }
+      },
+      { $sort: { refNum: 1 } }, // Ordena pelo campo refNum
+      { $skip: (page - 1) * pageSize }, // Pula documentos para a página
+      { $limit: pageSize } // Limita o número de documentos por página
+    ]);
 
     // Verifica se há uma próxima página
     let nextPage = null;
