@@ -70,7 +70,8 @@ const Categoria = mongoose.model('Categoria', {
 
 
 app.get('/produtos',async (req, res) => {
-  const Produtos = await Produto.find()
+  const Produtos = await Produto.find().sort({ ref: 1 });
+
   res.send(Produtos);
 })
 
@@ -91,7 +92,7 @@ app.get('/produtos/busca/:query', async (req, res) => {
 
     // Tenta encontrar produtos pelo ref
     [produtosQuery, totalProdutos] = await Promise.all([
-      Produto.find({ ref: query }).skip((page - 1) * pageSize).limit(pageSize),
+      Produto.find({ ref: query }).sort({ ref: 1 }).skip((page - 1) * pageSize).limit(pageSize),
       Produto.countDocuments({ ref: query })
     ]);
 
@@ -153,9 +154,10 @@ app.get('/produtos/:id', async (req, res) => {
 
   try {
     const produto = await Produto.findById(id);
+    ;
 
     if (!produto) {
-      return res.status(404).json({ message: "Produto não encontrado" });
+      return res.status(404).json({ message: "Produto não encontrado pelo ID" });
     }
 
     // Retorna o produto encontrado
@@ -243,7 +245,8 @@ app.get('/categorias/:tag', async (req, res) => {
 
   try {
     // Consulta os produtos com base na tag e aplica a paginação
-    const produtosQuery = Produto.find({ tag: tag });
+    const produtosQuery = Produto.find({ tag: tag }).sort({ ref: 1 });
+    ;
 
     // Conta o total de produtos com a tag especificada
     const totalProdutos = await Produto.countDocuments({ tag: tag });
