@@ -3,11 +3,13 @@ const mongoose = require("mongoose");
 require('dotenv').config();
 const cors = require('cors');
 const { ObjectId } = require('mongoose').Types;
-const cloudinary = require("./utils/cloudinary");
+// const cloudinary = require("./utils/cloudinary");
+const  productsRoute = require("./routes/products");
+
 
 const app = express();
 
-
+app.use(express.json());
  
 
 const corsOptions = {
@@ -23,6 +25,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+app.use("/api/produtos", productsRoute)
 
 
 
@@ -42,24 +46,24 @@ db.once('open', () => {
 });
 
 // Scheema produtos
-const Produto = mongoose.model('Produto', {
-  name: String,
-  tag: String,
-  description: String,
-  ref: String,
-  image: {
-    cores: {
-      amarelo: String,
-      azul: String,
-      branco: String,
-      rosa: String,
-      verde: String
-    },
-  },
-  cod: String,
-  sizes:String 
+// const Produto = mongoose.model('Produto', {
+//   name: String,
+//   tag: String,
+//   description: String,
+//   ref: String,
+//   image: {
+//     cores: {
+//       amarelo: String,
+//       azul: String,
+//       branco: String,
+//       rosa: String,
+//       verde: String
+//     },
+//   },
+//   cod: String,
+//   sizes:String 
  
-});
+// });
 
 // Scheema produtos
 const Categoria = mongoose.model('Categoria', {
@@ -69,43 +73,46 @@ const Categoria = mongoose.model('Categoria', {
 });
 
 
-app.post('/produtos', async (req, res) => {
-  const { name, tag, description, ref, image, cod, sizes } = req.body;
+
+
+
+// app.post('/produtos', async (req, res) => {
+//   const { name, tag, description, ref, image, cod, sizes } = req.body;
   
-  try {
-    if (image) {
-      const uploadRes = await cloudinary.uploader.upload(image, {
-        upload_preset: "radani_conf"
-      });
+//   try {
+//     if (image) {
+//       const uploadRes = await cloudinary.uploader.upload(image, {
+//         upload_preset: "radani_conf"
+//       });
 
-      if (uploadRes) {
-        const produto = new Produto({
-          name,
-          tag,
-          description,
-          ref,
-          image: uploadRes,
-          cod,
-          sizes
-        });
+//       if (uploadRes) {
+//         const produto = new Produto({
+//           name,
+//           tag,
+//           description,
+//           ref,
+//           image: uploadRes,
+//           cod,
+//           sizes
+//         });
         
-        await produto.save();
-        res.status(200).send(produto);
-      }
-    }
-  } catch (error) {
-    console.error("Erro ao salvar produto:", error);
-    res.status(500).send({ message: "Erro ao salvar produto" });
-  }
-});
+//         await produto.save();
+//         res.status(200).send(produto);
+//       }
+//     }
+//   } catch (error) {
+//     console.error("Erro ao salvar produto:", error);
+//     res.status(500).send({ message: "Erro ao salvar produto" });
+//   }
+// });
 
 
 
-app.get('/produtos',async (req, res) => {
-  const Produtos = await Produto.find().sort({ ref: 1 });
+// app.get('/produtos',async (req, res) => {
+//   const Produtos = await Produto.find().sort({ ref: 1 });
 
-  res.send(Produtos);
-})
+//   res.send(Produtos);
+// })
 
 // Rota para buscar produtos por query (nome, tag ou ref)
 

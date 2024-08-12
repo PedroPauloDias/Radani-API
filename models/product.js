@@ -1,7 +1,7 @@
-const mongoose = require('mongoose')
-// Scheema produtos
+const mongoose = require('mongoose');
 
-const productSchema = new mongoose.Schema({
+// Definindo o esquema do produto
+const ProdutoSchema = new mongoose.Schema({
   name: String,
   tag: String,
   description: String,
@@ -16,8 +16,10 @@ const productSchema = new mongoose.Schema({
     },
   },
   cod: String,
-  sizes:String 
- 
+  sizes: String
 });
 
-export const Product = mongoose.models.Product ?? mongoose.model("Product", userSchema);
+// Usando `mongoose.models.Produto` para garantir que o modelo não seja redefinido
+const Produto = mongoose.models.Produto || mongoose.model('Produto', ProdutoSchema);
+
+module.exports = Produto;

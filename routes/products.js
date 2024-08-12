@@ -1,6 +1,5 @@
 const express = require("express");
-const { Product } = require("../models/product");
-const mongoose = require("mongoose");
+const Produto = require("../models/product"); // Importa o modelo diretamente
 const cloudinary = require("../utils/cloudinary");
 
 const router = express.Router();
@@ -12,9 +11,9 @@ router.post('/produtos', async (req, res) => {
     if (image) {
       const uploadRes = await cloudinary.uploader.upload(image, {
         upload_preset: "radani_conf"
-      })
+      });
       if (uploadRes) {
-        const products = new Product({
+        const novoProduto = new Produto({
           name,
           tag,
           description,
@@ -22,10 +21,9 @@ router.post('/produtos', async (req, res) => {
           image: uploadRes,
           cod,
           sizes
-        })
-        const savedProduct = await products.save();
-        req.status(200).send(savedProduct)
-
+        });
+        const savedProduct = await novoProduto.save();
+        res.status(200).send(savedProduct);
       }
     }
   } catch (error) {
@@ -35,12 +33,13 @@ router.post('/produtos', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
- try {
-  const products = await Product.find()
-  res.status(200).send(products);
- } catch (error) {
-   res.status(500).send({ message: "Erro ao buscar produto" });
- }
-}) ;
+  try {
+    const produtos = await Produto.find();
+    console.log(produtos); 
+    res.status(200).send(produtos);
+  } catch (error) {
+    res.status(500).send({ message: "Erro ao buscar produto" });
+  }
+});
 
-module.exports = router
+module.exports = router;
