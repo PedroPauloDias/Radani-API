@@ -4,6 +4,9 @@ require('dotenv').config();
 const cors = require('cors');
 const { ObjectId } = require('mongoose').Types;
 
+const productsRoute = require('./routes/products')
+
+
 const app = express();
 
 
@@ -67,12 +70,13 @@ const Categoria = mongoose.model('Categoria', {
  
 });
 
+app.use("/produtos" , productsRoute)
 
 
-app.get('/produtos',async (req, res) => {
-  const Produtos = await Produto.find().sort({ ref: 1 });
 
-  res.send(Produtos);
+app.get('/produtos', async (req, res) => {
+  // const Produtos = await Produto.find().sort({ ref: 1 });
+  res.send(products);
 })
 
 // Rota para buscar produtos por query (nome, tag ou ref)
