@@ -26,7 +26,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use("/api/produtos", productsRoute)
+
+// ROTAS
+app.use("/produtos", productsRoute)
 
 
 
