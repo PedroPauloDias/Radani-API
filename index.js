@@ -70,7 +70,9 @@ const Categoria = mongoose.model('Categoria', {
  
 });
 
-app.use("/produtos" , productsRoute)
+app.use("/produtos", productsRoute);
+  
+
 
 
 
