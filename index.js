@@ -8,6 +8,8 @@ const productsRoute = require('./routes/products')
 
 
 const app = express();
+app.use(express.json());
+
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = ['http://localhost:3000','http://localhost:3001', 'https://radani.vercel.app','https://adm-radani.vercel.app', 'https://radani-conf.vercel.app']
@@ -69,13 +71,10 @@ const Categoria = mongoose.model('Categoria', {
 app.use("/produtos", productsRoute);
   
 
-
-
-
-app.get('/produtos', async (req, res) => {
-   const Produtos = await Produto.find().sort({ ref: 1 });
-  res.send(Produtos);
-})
+// app.get('/produtos', async (req, res) => {
+//    const Produtos = await Produto.find().sort({ ref: 1 });
+//   res.send(Produtos);
+// })
 
 // Rota para buscar produtos por query (nome, tag ou ref)
 

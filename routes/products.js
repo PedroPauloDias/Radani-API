@@ -1,5 +1,5 @@
 const express = require("express");
-import { Product } from '../models/product';
+const { Product } = require("../models/product");
 const mongoose = require("mongoose");
 const cloudinary = require("../utils/cloudinary");
 
@@ -23,8 +23,8 @@ router.post('/', async (req, res) => {
           cod,
           sizes
         })
-        const savedProduct = await products.save
-        req.statusCode(200).send(savedProduct)
+        const savedProduct = await products.save();
+        req.status(200).send(savedProduct)
 
       }
     }
@@ -34,7 +34,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/ ', async (req, res) => {
+router.get('/', async (req, res) => {
  try {
   const products = await Product.find()
   res.status(200).send(products);
