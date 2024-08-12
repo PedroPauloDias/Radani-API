@@ -1,11 +1,11 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const { Product } = require("../models/product");
+const mongoose = require("mongoose");
 const cloudinary = require("../utils/cloudinary");
 
 const router = express.Router();
 
-app.post('/produtos', async (req, res) => {
+router.post('/produtos', async (req, res) => {
   const { name, tag, description, ref, image, cod, sizes } = req.body;
   
   try {
@@ -34,7 +34,7 @@ app.post('/produtos', async (req, res) => {
   }
 });
 
-app.get('/produtos', async (req, res) => {
+router.get('/', async (req, res) => {
  try {
   const products = await Product.find()
   res.status(200).send(products);
