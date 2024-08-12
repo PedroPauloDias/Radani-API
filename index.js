@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 require('dotenv').config();
 const cors = require('cors');
 const { ObjectId } = require('mongoose').Types;
+const cloudinary = require("./utils/cloudinary");
 
 const app = express();
 
@@ -65,6 +66,37 @@ const Categoria = mongoose.model('Categoria', {
   name: String,
   image: String,
  
+});
+
+
+app.post('/produtos', async (req, res) => {
+  const { name, tag, description, ref, image, cod, sizes } = req.body;
+  
+  try {
+    if (image) {
+      const uploadRes = await cloudinary.uploader.upload(image, {
+        upload_preset: "radani_conf"
+      });
+
+      if (uploadRes) {
+        const produto = new Produto({
+          name,
+          tag,
+          description,
+          ref,
+          image: uploadRes,
+          cod,
+          sizes
+        });
+        
+        await produto.save();
+        res.status(200).send(produto);
+      }
+    }
+  } catch (error) {
+    console.error("Erro ao salvar produto:", error);
+    res.status(500).send({ message: "Erro ao salvar produto" });
+  }
 });
 
 
