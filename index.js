@@ -1,14 +1,14 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cloudinary = require("../utils/cloudinary");
+
 require('dotenv').config();
 const cors = require('cors');
 const { ObjectId } = require('mongoose').Types;
 
-const productsRoute = require('./routes/products')
 
 
 const app = express();
-app.use(express.json());
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -68,7 +68,6 @@ const Categoria = mongoose.model('Categoria', {
  
 });
 
-app.use("/produtos", productsRoute);
   
 
 // app.get('/produtos', async (req, res) => {
@@ -77,6 +76,47 @@ app.use("/produtos", productsRoute);
 // })
 
 // Rota para buscar produtos por query (nome, tag ou ref)
+
+
+
+
+app.post('/produtos', async (req, res) => {
+  const { name, tag, description, ref, image, cod, sizes } = req.body;
+  
+  try {
+    if (image) {
+      const uploadRes = await cloudinary.uploader.upload(image, {
+        upload_preset: "radani_conf"
+      })
+      if (uploadRes) {
+        const produtos = new Produto({
+          name,
+          tag,
+          description,
+          ref,
+          image: uploadRes,
+          cod,
+          sizes
+        })
+        const produtosSalvos = await produtos.save();
+        req.status(200).send(produtosSalvos)
+
+      }
+    }
+  } catch (error) {
+    console.error("Error ao salvar produto:", error);
+    res.status(500).send({ message: "Erro ao salvar produto" });
+  }
+});
+
+app.get('/produtos', async (req, res) => {
+ try {
+  const Produtos = await Produto.find()
+  res.status(200).send(Produtos);
+ } catch (error) {
+   res.status(500).send({ message: "Erro ao buscar produto" });
+ }
+}) ;
 
 app.get('/produtos/busca/:query', async (req, res) => {
   const query = req.params.query;
