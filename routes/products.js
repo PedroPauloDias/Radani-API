@@ -19,6 +19,9 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
+
+
+// POST
 router.post('/', upload.single('image'), async (req, res) => {
   const { name, tag, description, ref, cod, sizes } = req.body;
   const image = req.file;
@@ -72,6 +75,8 @@ router.get('/', async (req, res) => {
   }
 });
 
+
+// buscando por ref / categoria /nome
 
 // router.get('/:query', async (req, res) => {
 //   const query = req.params.query;
@@ -142,6 +147,8 @@ router.get('/', async (req, res) => {
 //     return res.status(500).json({ message: "Erro ao buscar produtos por query" });
 //   }
 // });
+
+
 
 
 // // Rota para buscar um produto pelo ID
@@ -266,26 +273,26 @@ router.get('/:id', async (req, res) => {
 
 
 
- //Rota para buscar um produto pelo ID
-router.get('/produtos/:id', async (req, res) => {
-  const id = req.params.id;
+//  //Rota para buscar um produto pelo ID
+// router.get('/:id', async (req, res) => {
+//   const id = req.params.id;
 
-  try {
-    const produto = await Produto.findById(id);
+//   try {
+//     const produto = await Produto.findById(id);
 
-    if (!produto) {
-      return res.status(404).json({ message: "Produto não encontrado" });
-    }
+//     if (!produto) {
+//       return res.status(404).json({ message: "Produto não encontrado" });
+//     }
 
-    // Retorna o produto encontrado
-    res.json(produto);
+//     // Retorna o produto encontrado
+//     res.json(produto);
 
-  } catch (error) {
-    console.error("Erro ao buscar produto pelo ID:", error);
-    // Retorna um erro 500 em caso de falha na consulta
-    res.status(500).json({ message: "Erro ao buscar produto pelo ID" });
-  }
-});
+//   } catch (error) {
+//     console.error("Erro ao buscar produto pelo ID:", error);
+//     // Retorna um erro 500 em caso de falha na consulta
+//     res.status(500).json({ message: "Erro ao buscar produto pelo ID" });
+//   }
+// });
 
 
 // app.get("/produtos/:id", async (req, res) => {
