@@ -41,7 +41,7 @@ router.createProduct = async (req, res, next) => {
 }
 
 
-router.post('/produtos', async (req, res) => {
+router.post('/', async (req, res) => {
   const { name, tag, description, ref, image, cod, sizes } = req.body;
   
   try {
@@ -56,8 +56,8 @@ router.post('/produtos', async (req, res) => {
           description,
           ref,
           image: {
-            public_id: result.public_id,
-            url: result.secure_url,      
+            public_id: uploadRes.public_id,
+            url: uploadRes.secure_url,      
           },
           cod,
           sizes
