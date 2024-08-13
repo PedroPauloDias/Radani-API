@@ -73,7 +73,7 @@ router.get('/', async (req, res) => {
 });
 
 
-app.get('/:query', async (req, res) => {
+router.get('/:query', async (req, res) => {
   const query = req.params.query;
   let page = parseInt(req.query.page) || 1; // Página atual, padrão é 1
   const pageSize = parseInt(req.query.pageSize) || 10; // Tamanho da página, padrão é 10
@@ -145,7 +145,7 @@ app.get('/:query', async (req, res) => {
 
 
 // Rota para buscar um produto pelo ID
-app.get('/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
   const id = req.params.id;
 
   try {
