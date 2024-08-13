@@ -14,6 +14,16 @@ const ProdutoSchema = new mongoose.Schema({
       rosa: String,
       verde: String
     },
+
+    public_id: {
+      type: String,
+      required: true
+    },
+    url: {
+      type: String,
+      required: true
+    }
+
   },
   cod: String,
   sizes: String
