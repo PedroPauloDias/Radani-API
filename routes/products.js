@@ -1,10 +1,16 @@
 const express = require("express");
 const Produto = require("../models/product"); // Importa o modelo diretamente
 const cloudinary = require("../utils/cloudinary");
-
+const multer = require('multer');
+const path = require('path');
 const router = express.Router();
 
-
+// Configuração do multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
+});
+const upload = multer({ storage: storage });
 
 
 router.createProduct = async (req, res, next) => {
@@ -41,36 +47,40 @@ router.createProduct = async (req, res, next) => {
 }
 
 
-router.post('/', async (req, res) => {
-  const { name, tag, description, ref, image, cod, sizes } = req.body;
-  
+router.post('/', upload.single('image'), async (req, res) => {
+  const { name, tag, description, ref, cod, sizes } = req.body;
+  const image = req.file;
+
+  if (!image) {
+    return res.status(400).json({ message: 'Image file is required' });
+  }
+
   try {
-    if (image) {
-      const uploadRes = await cloudinary.uploader.upload(image, {
-        upload_preset: "radani_conf"
-      });
-      if (uploadRes) {
-        const novoProduto = new Produto({
-          name,
-          tag,
-          description,
-          ref,
-          image: {
-            public_id: uploadRes.public_id,
-            url: uploadRes.secure_url,      
-          },
-          cod,
-          sizes
-        });
-        const savedProduct = await novoProduto.save();
-        res.status(200).send(savedProduct);
-      }
-    }
+    const uploadRes = await cloudinary.uploader.upload(image.path, {
+      upload_preset: "radani_conf"
+    });
+    
+    const novoProduto = new Produto({
+      name,
+      tag,
+      description,
+      ref,
+      image: {
+        public_id: uploadRes.public_id,
+        url: uploadRes.secure_url,
+      },
+      cod,
+      sizes
+    });
+
+    const savedProduct = await novoProduto.save();
+    res.status(201).json(savedProduct);
   } catch (error) {
     console.error("Error ao salvar produto:", error);
-    res.status(500).send({ message: "Erro ao salvar produto" });
+    res.status(500).json({ message: "Erro ao salvar produto" });
   }
 });
+
 
 router.get('/', async (req, res) => {
   try {
