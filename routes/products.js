@@ -270,6 +270,54 @@ router.get('/:id', async (req, res) => {
 });
 
 
+router.put('/:id', async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const produto = await Produto.findById(id);
+
+    if (!produto) {
+      return res.status(404).json({ message: "Produto não encontrado pelo ID" });
+    }
+
+    // Atualiza o produto com os dados fornecidos
+    Object.assign(produto, req.body);
+    await produto.save();
+
+    // Retorna o produto atualizado
+    res.json({ message: "Produto atualizado com sucesso", produto });
+
+  } catch (error) {
+    console.error("Erro ao atualizar produto:", error);
+    res.status(500).json({ message: "Erro ao atualizar produto" });
+  }
+});
+
+
+
+router.delete('/:id', async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const produto = await Produto.findById(id);
+
+    if (!produto) {
+      return res.status(404).json({ message: "Produto não encontrado pelo ID" });
+    }
+
+    // Remove o produto do banco de dados
+    await produto.remove();
+
+    // Retorna uma mensagem de sucesso
+    res.json({ message: "Produto excluído com sucesso" });
+
+  } catch (error) {
+    console.error("Erro ao excluir produto:", error);
+    res.status(500).json({ message: "Erro ao excluir produto" });
+  }
+});
+
+
 
 
 
