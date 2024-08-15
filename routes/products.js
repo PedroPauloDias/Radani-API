@@ -299,7 +299,7 @@ router.delete('/:id', async (req, res) => {
   const id = req.params.id;
 
   try {
-    const produto = await Produto.findById(id);
+    const produto = await Produto.findByIdAndDelete(id);
 
     if (!produto) {
       return res.status(404).json({ message: "Produto não encontrado pelo ID" });
