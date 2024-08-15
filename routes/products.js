@@ -293,31 +293,26 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-
-
 router.delete('/:id', async (req, res) => {
   const id = req.params.id;
 
   try {
+    // Remove o produto do banco de dados usando findByIdAndDelete
     const produto = await Produto.findByIdAndDelete(id);
 
     if (!produto) {
+      console.log("Produto não encontrado pelo ID:", id);
       return res.status(404).json({ message: "Produto não encontrado pelo ID" });
     }
 
-    // Remove o produto do banco de dados
-    await produto.remove();
-
-    // Retorna uma mensagem de sucesso
-    res.json({ message: "Produto excluído com sucesso" });
+    console.log("Produto excluído com sucesso:", id);
+    return res.json({ message: "Produto excluído com sucesso" });
 
   } catch (error) {
-    console.error("Erro ao excluir produto:", error);
-    res.status(500).json({ message: "Erro ao excluir produto" });
+    console.error("Erro ao excluir produto:", error.message, error.stack);
+    return res.status(500).json({ message: "Erro ao excluir produto", error: error.message });
   }
 });
-
-
 
 
 
