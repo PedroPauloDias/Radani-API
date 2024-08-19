@@ -150,7 +150,7 @@ router.put('/:id', upload.fields([{ name: 'image' }, { name: 'cores' }]), async 
 
   } catch (error) {
     console.error("Erro ao atualizar produto:", error);
-    res.status(500).json({ message: "Erro ao atualizar produto" });
+    res.status(500).json({ message: "Erro ao atualizar o produto" });
   }
 });
 
@@ -265,29 +265,29 @@ router.delete('/:id', async (req, res) => {
 
 
 // Rota DELETE para remover um item específico de cores
-// router.delete('/api/products/:productId/cores/:coreId', async (req, res) => {
-//   const { productId, coreId } = req.params;
+router.delete('/api/products/:productId/cores/:coreId', async (req, res) => {
+  const { productId, coreId } = req.params;
 
-//   try {
-//     Encontrar o produto pelo ID
-//     const produto = await Produto.findById(productId);
+  try {
+    // Encontrar o produto pelo ID
+    const produto = await Produto.findById(productId);
 
-//     if (!produto) {
-//       return res.status(404).json({ message: 'Produto não encontrado' });
-//     }
+    if (!produto) {
+      return res.status(404).json({ message: 'Produto não encontrado' });
+    }
 
-//     Filtrar a array cores para remover o item com o coreId
-//     produto.cores = produto.cores.filter(cor => cor._id.toString() !== coreId);
+    // Filtrar a array cores para remover o item com o coreId
+    produto.cores = produto.cores.filter(cor => cor._id.toString() !== coreId);
 
-//     Salvar as alterações no produto
-//     await produto.save();
+    // Salvar as alterações no produto
+    await produto.save();
 
-//     res.status(200).json({ message: 'Item de cores removido com sucesso' });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: 'Erro ao remover item de cores' });
-//   }
-// });
+    res.status(200).json({ message: 'Item de cores removido com sucesso' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Erro ao remover item de cores' });
+  }
+});
 
 
 
