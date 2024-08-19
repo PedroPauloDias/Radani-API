@@ -7,14 +7,6 @@ const ProdutoSchema = new mongoose.Schema({
   description: String,
   ref: String,
   image: {
-    cores: {
-      amarelo: String,
-      azul: String,
-      branco: String,
-      rosa: String,
-      verde: String
-    },
-
     public_id: {
       type: String,
       required: true
@@ -25,6 +17,12 @@ const ProdutoSchema = new mongoose.Schema({
     }
 
   },
+  cores: [
+    {
+      public_id: String,
+      url: String,
+    }
+  ],
   cod: String,
   sizes: String
 });

@@ -6,36 +6,53 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
-// Certificar-se de que a pasta 'uploads' existe
-const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-}
+const uploadDir = 'uploads/';
 
-// Configuração do multer
+// Configuração do multer para upload
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix);
+  }
 });
+
 const upload = multer({ storage: storage });
 
+// Endpoint POST para criar um novo produto
 
 
-// POST
-router.post('/', upload.single('image'), async (req, res) => {
+router.post('/', upload.fields([{ name: 'image' }, { name: 'cores' }]), async (req, res) => {
   const { name, tag, description, ref, cod, sizes } = req.body;
-  const image = req.file;
+  const image = req.files['image'] ? req.files['image'][0] : null;
+  const coresFiles = req.files['cores'] || []; // Pode ser um array vazio se não houver arquivos
 
   if (!image) {
     return res.status(400).json({ message: 'Image file is required' });
   }
 
   try {
-    // Upload para o Cloudinary
+    // Upload da imagem principal para o Cloudinary
     const uploadRes = await cloudinary.uploader.upload(image.path, {
       folder: "produtos",
       upload_preset: "radani_conf"
     });
+
+    // Upload das imagens adicionais (cores) para o Cloudinary, se existirem
+    const coresUploads = coresFiles.length > 0 ? await Promise.all(coresFiles.map(async (file) => {
+      const uploadRes = await cloudinary.uploader.upload(file.path, {
+        folder: "produtos",
+        upload_preset: "radani_conf"
+      });
+      // Remover o arquivo local após o upload
+      fs.unlinkSync(file.path);
+      return {
+        public_id: uploadRes.public_id,
+        url: uploadRes.secure_url,
+      };
+    })) : [];
 
     // Criação do produto
     const novoProduto = new Produto({
@@ -43,12 +60,13 @@ router.post('/', upload.single('image'), async (req, res) => {
       tag,
       description,
       ref,
+      cod,
+      sizes,
       image: {
         public_id: uploadRes.public_id,
         url: uploadRes.secure_url,
       },
-      cod,
-      sizes
+      cores: coresUploads, // Adiciona o array cores aqui
     });
 
     // Salvar no MongoDB
@@ -57,7 +75,7 @@ router.post('/', upload.single('image'), async (req, res) => {
     // Responder com o produto salvo
     res.status(201).json(savedProduct);
 
-    // Remover o arquivo local após o upload para o Cloudinary
+    // Remover o arquivo local da imagem principal após o upload
     fs.unlinkSync(image.path);
 
   } catch (error) {
@@ -66,136 +84,109 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+
+// Endpoint PUT para atualizar um produto existente
+
+router.put('/:id', upload.fields([{ name: 'image' }, { name: 'cores' }]), async (req, res) => {
+  const id = req.params.id;
+  const { name, tag, description, ref, cod, sizes } = req.body;
+  const image = req.files['image'] ? req.files['image'][0] : null;
+  const coresFiles = req.files['cores'] || []; // Pode ser um array vazio se `cores` não for enviado
+
   try {
-    const produtos = await Produto.find().sort({ ref: 1 });
-    res.status(200).send(produtos);
+    // Verificar se o produto existe
+    const produto = await Produto.findById(id);
+    if (!produto) {
+      return res.status(404).json({ message: "Produto não encontrado pelo ID" });
+    }
+
+    // Se há uma imagem principal enviada, faça o upload para o Cloudinary
+    if (image) {
+      const uploadRes = await cloudinary.uploader.upload(image.path, {
+        folder: "produtos",
+        upload_preset: "radani_conf"
+      });
+
+      produto.image = {
+        public_id: uploadRes.public_id,
+        url: uploadRes.secure_url,
+      };
+
+      // Remover o arquivo local após o upload para o Cloudinary
+      fs.unlinkSync(image.path);
+    }
+
+    // Se há imagens adicionais (cores) enviadas, faça o upload para o Cloudinary e atualize o array cores
+    if (coresFiles.length > 0) {
+      const coresUploads = await Promise.all(coresFiles.map(async (file) => {
+        const uploadRes = await cloudinary.uploader.upload(file.path, {
+          folder: "produtos",
+          upload_preset: "radani_conf"
+        });
+
+        // Remover o arquivo local após o upload para o Cloudinary
+        fs.unlinkSync(file.path);
+
+        return {
+          public_id: uploadRes.public_id,
+          url: uploadRes.secure_url,
+        };
+      }));
+
+      produto.cores = coresUploads;
+    }
+
+    // Atualizar os outros campos
+    if (name) produto.name = name;
+    if (tag) produto.tag = tag;
+    if (description) produto.description = description;
+    if (ref) produto.ref = ref;
+    if (cod) produto.cod = cod;
+    if (sizes) produto.sizes = sizes;
+
+    // Salvar o produto atualizado no MongoDB
+    await produto.save();
+
+    // Retornar o produto atualizado
+    res.json({ message: "Produto atualizado com sucesso", produto });
+
   } catch (error) {
-    res.status(500).send({ message: "Erro ao buscar produto" });
+    console.error("Erro ao atualizar produto:", error);
+    res.status(500).json({ message: "Erro ao atualizar produto" });
   }
 });
 
 
-// buscando por ref / categoria /nome
 
-// router.get('/:query', async (req, res) => {
-//   const query = req.params.query;
-//   let page = parseInt(req.query.page) || 1; // Página atual, padrão é 1
-//   const pageSize = parseInt(req.query.pageSize) || 10; // Tamanho da página, padrão é 10
+// Endpoint GET para listar produtos
+router.get('/', async (req, res) => {
+  try {
+    const produtos = await Produto.find().sort({ ref: 1 });
+    res.status(200).json(produtos);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar produtos" });
+  }
+});
 
-//   try {
-//     let produtosQuery;
-//     let totalProdutos;
-
-//     if (!query) {
-//       return res.status(400).json({ message: 'A consulta não pode ser vazia' });
-//     }
-
-//     // Tenta encontrar produtos pelo ref
-//     [produtosQuery, totalProdutos] = await Promise.all([
-//       Produto.find({ ref: query }).sort({ ref: 1 }).skip((page - 1) * pageSize).limit(pageSize),
-//       Produto.countDocuments({ ref: query })
-//     ]);
-
-//     // Se não encontrou produtos pelo ref, tenta buscar por nome ou tag
-//     if (produtosQuery.length === 0) {
-//       const regexQuery = new RegExp(query, 'i');
-//       [produtosQuery, totalProdutos] = await Promise.all([
-//         Produto.find({
-//           $or: [
-//             { name: { $regex: regexQuery } },
-//             { tag: { $regex: regexQuery } }
-//           ]
-//         }).skip((page - 1) * pageSize).limit(pageSize),
-//         Produto.countDocuments({
-//           $or: [
-//             { name: { $regex: regexQuery } },
-//             { tag: { $regex: regexQuery } }
-//           ]
-//         })
-//       ]);
-//     }
-
-//     // Verifica se encontrou produtos
-//     if (produtosQuery.length === 0) {
-//       return res.status(404).json({ message: `Nenhum produto encontrado com a busca '${query}'` });
-//     }
-
-//     // Calcula o número total de páginas
-//     const totalPages = Math.ceil(totalProdutos / pageSize);
-
-//     // Verifica se a página solicitada é válida
-//     if (page < 1) {
-//       page = 1;
-//     } else if (page > totalPages) {
-//       page = totalPages;
-//     }
-
-//     // Retorna os produtos encontrados e informações de paginação
-//     return res.json({
-//       produtos: produtosQuery,
-//       totalPages,
-//       currentPage: page,
-//       totalItems: totalProdutos,
-//       nextPage: page < totalPages ? page + 1 : null,
-//       prevPage: page > 1 ? page - 1 : null
-//     });
-
-//   } catch (error) {
-//     console.error("Erro ao buscar produtos por query:", error);
-//     // Retorna um erro 500 em caso de falha na consulta
-//     return res.status(500).json({ message: "Erro ao buscar produtos por query" });
-//   }
-// });
-
-
-
-
-// // Rota para buscar um produto pelo ID
-// router.get('/:id', async (req, res) => {
-//   const id = req.params.id;
-
-//   try {
-//     const produto = await Produto.findById(id);
-//     ;
-
-//     if (!produto) {
-//       return res.status(404).json({ message: "Produto não encontrado pelo ID" });
-//     }
-
-//     // Retorna o produto encontrado
-//     res.json(produto);
-
-//   } catch (error) {
-//     console.error("Erro ao buscar produto pelo ID:", error);
-//     // Retorna um erro 500 em caso de falha na consulta
-//     res.status(500).json({ message: "Erro ao buscar produto pelo ID" });
-//   }
-// });
-
-
-
-
+// Endpoint GET para buscar produtos por query
 router.get('/busca/:query', async (req, res) => {
   const query = req.params.query;
-  let page = parseInt(req.query.page) || 1; // Página atual, padrão é 1
-  const pageSize = parseInt(req.query.pageSize) || 10; // Tamanho da página, padrão é 10
+  let page = parseInt(req.query.page) || 1;
+  const pageSize = parseInt(req.query.pageSize) || 10;
 
   try {
-    let produtosQuery;
-    let totalProdutos;
-
     if (!query) {
       return res.status(400).json({ message: 'A consulta não pode ser vazia' });
     }
 
-    // Tenta encontrar produtos pelo ref
+    let produtosQuery;
+    let totalProdutos;
+
     [produtosQuery, totalProdutos] = await Promise.all([
       Produto.find({ ref: query }).sort({ ref: 1 }).skip((page - 1) * pageSize).limit(pageSize),
       Produto.countDocuments({ ref: query })
     ]);
 
-    // Se não encontrou produtos pelo ref, tenta buscar por nome ou tag
     if (produtosQuery.length === 0) {
       const regexQuery = new RegExp(query, 'i');
       [produtosQuery, totalProdutos] = await Promise.all([
@@ -214,23 +205,15 @@ router.get('/busca/:query', async (req, res) => {
       ]);
     }
 
-    // Verifica se encontrou produtos
     if (produtosQuery.length === 0) {
       return res.status(404).json({ message: `Nenhum produto encontrado com a busca '${query}'` });
     }
 
-    // Calcula o número total de páginas
     const totalPages = Math.ceil(totalProdutos / pageSize);
+    if (page < 1) page = 1;
+    else if (page > totalPages) page = totalPages;
 
-    // Verifica se a página solicitada é válida
-    if (page < 1) {
-      page = 1;
-    } else if (page > totalPages) {
-      page = totalPages;
-    }
-
-    // Retorna os produtos encontrados e informações de paginação
-    return res.json({
+    res.json({
       produtos: produtosQuery,
       totalPages,
       currentPage: page,
@@ -241,113 +224,70 @@ router.get('/busca/:query', async (req, res) => {
 
   } catch (error) {
     console.error("Erro ao buscar produtos por query:", error);
-    // Retorna um erro 500 em caso de falha na consulta
-    return res.status(500).json({ message: "Erro ao buscar produtos por query" });
+    res.status(500).json({ message: "Erro ao buscar produtos por query" });
   }
 });
 
-
-// Rota para buscar um produto pelo ID
+// Endpoint GET para buscar um produto pelo ID
 router.get('/:id', async (req, res) => {
   const id = req.params.id;
 
   try {
     const produto = await Produto.findById(id);
-    ;
-
     if (!produto) {
       return res.status(404).json({ message: "Produto não encontrado pelo ID" });
     }
-
-    // Retorna o produto encontrado
     res.json(produto);
-
   } catch (error) {
     console.error("Erro ao buscar produto pelo ID:", error);
-    // Retorna um erro 500 em caso de falha na consulta
     res.status(500).json({ message: "Erro ao buscar produto pelo ID" });
   }
 });
 
 
-router.put('/:id', async (req, res) => {
-  const id = req.params.id;
-
-  try {
-    const produto = await Produto.findById(id);
-
-    if (!produto) {
-      return res.status(404).json({ message: "Produto não encontrado pelo ID" });
-    }
-
-    // Atualiza o produto com os dados fornecidos
-    Object.assign(produto, req.body);
-    await produto.save();
-
-    // Retorna o produto atualizado
-    res.json({ message: "Produto atualizado com sucesso", produto });
-
-  } catch (error) {
-    console.error("Erro ao atualizar produto:", error);
-    res.status(500).json({ message: "Erro ao atualizar produto" });
-  }
-});
-
 router.delete('/:id', async (req, res) => {
-  const id = req.params.id;
+  const { id } = req.params;
 
   try {
-    // Remove o produto do banco de dados usando findByIdAndDelete
+    // Encontrar e remover o produto pelo ID
     const produto = await Produto.findByIdAndDelete(id);
 
     if (!produto) {
-      console.log("Produto não encontrado pelo ID:", id);
-      return res.status(404).json({ message: "Produto não encontrado pelo ID" });
+      return res.status(404).json({ message: 'Produto não encontrado' });
     }
 
-    console.log("Produto excluído com sucesso:", id);
-    return res.json({ message: "Produto excluído com sucesso" });
-
+    res.status(200).json({ message: 'Produto removido com sucesso' });
   } catch (error) {
-    console.error("Erro ao excluir produto:", error.message, error.stack);
-    return res.status(500).json({ message: "Erro ao excluir produto", error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Erro ao remover o produto' });
   }
 });
 
 
 
-//  //Rota para buscar um produto pelo ID
-// router.get('/:id', async (req, res) => {
-//   const id = req.params.id;
+
+// Rota DELETE para remover um item específico de cores
+// router.delete('/api/products/:productId/cores/:coreId', async (req, res) => {
+//   const { productId, coreId } = req.params;
 
 //   try {
-//     const produto = await Produto.findById(id);
+//     Encontrar o produto pelo ID
+//     const produto = await Produto.findById(productId);
 
 //     if (!produto) {
-//       return res.status(404).json({ message: "Produto não encontrado" });
+//       return res.status(404).json({ message: 'Produto não encontrado' });
 //     }
 
-//     // Retorna o produto encontrado
-//     res.json(produto);
+//     Filtrar a array cores para remover o item com o coreId
+//     produto.cores = produto.cores.filter(cor => cor._id.toString() !== coreId);
 
+//     Salvar as alterações no produto
+//     await produto.save();
+
+//     res.status(200).json({ message: 'Item de cores removido com sucesso' });
 //   } catch (error) {
-//     console.error("Erro ao buscar produto pelo ID:", error);
-//     // Retorna um erro 500 em caso de falha na consulta
-//     res.status(500).json({ message: "Erro ao buscar produto pelo ID" });
-//   }
-// });
-
-
-// app.get("/produtos/:id", async (req, res) => {
-//   try {
-//     const produto = await Produto.findById(req.params.id);
-//     if (!produto) {
-//       return res.status(404).send({ message: "Produto não encontrado" });
-//     }
-//     return res.send(produto);
-//   } catch (error) {
-//     console.error("Erro ao buscar produto:", error);
-//     return res.status(500).send({ message: "Erro ao buscar produto pelo id " });
+//     console.error(error);
+//     res.status(500).json({ message: 'Erro ao remover item de cores' });
 //   }
 // });
 
