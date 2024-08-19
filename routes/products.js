@@ -23,7 +23,6 @@ const upload = multer({ storage: storage });
 
 // Endpoint POST para criar um novo produto
 
-
 router.post('/', upload.fields([{ name: 'image' }, { name: 'cores' }]), async (req, res) => {
   const { name, tag, description, ref, cod, sizes } = req.body;
   const image = req.files['image'] ? req.files['image'][0] : null;
@@ -72,18 +71,17 @@ router.post('/', upload.fields([{ name: 'image' }, { name: 'cores' }]), async (r
     // Salvar no MongoDB
     const savedProduct = await novoProduto.save();
     
-    // Responder com o produto salvo
-    res.status(201).json(savedProduct);
-
     // Remover o arquivo local da imagem principal após o upload
     fs.unlinkSync(image.path);
+
+    // Responder com o produto salvo
+    res.status(201).json(savedProduct);
 
   } catch (error) {
     console.error("Error ao salvar produto:", error);
     res.status(500).json({ message: "Erro ao salvar produto" });
   }
 });
-
 
 // Endpoint PUT para atualizar um produto existente
 
