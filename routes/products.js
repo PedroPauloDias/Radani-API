@@ -29,7 +29,7 @@ router.post('/', upload.fields([{ name: 'image' }, { name: 'cores' }]), async (r
   const coresFiles = req.files['cores'] || []; // Pode ser um array vazio se não houver arquivos
 
   if (!image) {
-    return res.status(400).json({ message: 'Image file is required' });
+    return res.status(400).json({ message: 'Imagem é obrigatório' });
   }
 
   try {
@@ -288,8 +288,5 @@ router.delete('/api/products/:productId/cores/:coreId', async (req, res) => {
     res.status(500).json({ message: 'Erro ao remover item de cores' });
   }
 });
-
-
-
 
 module.exports = router;
