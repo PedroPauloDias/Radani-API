@@ -28,7 +28,6 @@ router.post('/', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'cores',
     const { name, tag, description, ref, cod, sizes } = req.body;
     const coresFiles = req.files['cores'] || [];  
 
-    // Verifica se o arquivo principal foi enviado
     if (!req.files || !req.files['image']) {
       return res.status(400).send({ message: 'Nenhum arquivo principal enviado' });
     }
@@ -54,7 +53,9 @@ router.post('/', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'cores',
     };
 
     // Processar os arquivos das cores, se existirem
-    const coresUploads = await Promise.all(coresFiles.map(async (file) => {
+    const coresUploads = await Promise.all(coresFiles.map(async (file, index) => {
+      console.log(`Processando arquivo de cores ${index + 1}`);
+      
       const fileStream = streamifier.createReadStream(file.buffer);
       const uploadRes = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
@@ -74,6 +75,9 @@ router.post('/', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'cores',
         url: uploadRes.secure_url,
       };
     }));
+
+    // Log para verificar coresUploads
+    console.log('Cores uploads:', coresUploads);
 
     // Criar uma nova instância do modelo Produto com os dados fornecidos
     const produto = new Produto({
@@ -96,8 +100,6 @@ router.post('/', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'cores',
     res.status(500).json({ message: 'Erro ao salvar produto', error });
   }
 });
-
-
 // Endpoint PUT para atualizar um produto existente
 
 router.put('/:id', upload.fields([{ name: 'file' }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
