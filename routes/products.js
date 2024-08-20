@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
-const uploadDir = 'uploads/';
+const uploadDir = 'uploads/'
 
 // Configuração do multer para upload
 const storage = multer.diskStorage({
@@ -27,10 +27,12 @@ router.post('/pedro', async (req, res) => {
   res.status(400).json({ error: 'pedro' })
 })
 
-router.post('/', async (req, res) => {
-  const { name, tag, description, ref, cod, sizes } = req.body;
+router.post('/', upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'cores', maxCount: 10 } // Ajuste conforme necessário
+]), async (req, res) => {  const { name, tag, description, ref, cod, sizes } = req.body;
   const image = req.files && req.files['image'] ? req.files['image'][0] : null;
-  const coresFiles = req.files['cores'] || []; // Pode ser um array vazio se não houver arquivos
+  // const coresFiles = req.files['cores'] || []; // Pode ser um array vazio se não houver arquivos
 
   if (!image) {
     return res.status(400).json({ message: 'Imagem é obrigatória' });
