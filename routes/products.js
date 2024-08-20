@@ -20,7 +20,7 @@ const upload = multer({
   }
 });
 
-router.post('/', upload.fields([{ name: 'image' }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
+router.post('/', upload.fields([{ name: 'image' , maxCount: 1 }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
   try {
     const { name, tag, description, ref, cod, sizes } = req.body;
 
@@ -44,39 +44,40 @@ router.post('/', upload.fields([{ name: 'image' }, { name: 'cores', maxCount: 10
     });
 
     // Processar os arquivos das cores, se existirem
-    const coresFiles = req.files['cores'] || [];
     const coresUploads = await Promise.all(coresFiles.map(async (file) => {
       const fileStream = streamifier.createReadStream(file.buffer);
       const uploadRes = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream({ folder: 'produtos', upload_preset: 'radani_conf' }, (error, result) => {
-          if (error) {
-            reject(error);
-          } else {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'produtos', upload_preset: 'radani_conf' },
+          (error, result) => {
+            if (error) {
+              return reject(error);
+            }
             resolve(result);
           }
-        });
+        );
+
         fileStream.pipe(stream);
       });
+
       return {
         public_id: uploadRes.public_id,
         url: uploadRes.secure_url,
       };
     }));
 
-    // Criar um novo produto
-    const novoProduto = new Produto({
-      name,
-      tag,
-      description,
-      ref,
-      cod,
-      sizes,
-      image: {
-        public_id: uploadResMain.public_id,
-        url: uploadResMain.secure_url,
-      },
+    // Exemplo de criação ou atualização do produto no banco de dados
+    const produto = {
+      name: req.body.name,
+      tag: req.body.tag,
+      description: req.body.description,
+      ref: req.body.ref,
+      image: mainImage,
       cores: coresUploads,
-    });
+      cod: req.body.cod,
+      sizes: req.body.sizes
+    };
+
 
     // Salvar o produto no banco de dados
     const savedProduto = await novoProduto.save();
