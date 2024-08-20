@@ -20,11 +20,15 @@ const upload = multer({
   }
 });
 
-router.post('/', upload.fields([{ name: 'image' , maxCount: 1 }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
+
+
+// Endpoint para criar um produto
+router.post('/', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
   try {
     const { name, tag, description, ref, cod, sizes } = req.body;
     const coresFiles = req.files['cores'] || [];  
 
+    // Verifica se o arquivo principal foi enviado
     if (!req.files || !req.files['image']) {
       return res.status(400).send({ message: 'Nenhum arquivo principal enviado' });
     }
@@ -32,7 +36,7 @@ router.post('/', upload.fields([{ name: 'image' , maxCount: 1 }, { name: 'cores'
     // Processar o arquivo principal
     const mainFile = req.files['image'][0];
     const mainFileStream = streamifier.createReadStream(mainFile.buffer);
-    
+
     const uploadResMain = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream({ folder: 'produtos', upload_preset: 'radani_conf' }, (error, result) => {
         if (error) {
@@ -43,6 +47,11 @@ router.post('/', upload.fields([{ name: 'image' , maxCount: 1 }, { name: 'cores'
       });
       mainFileStream.pipe(stream);
     });
+
+    const mainImage = {
+      public_id: uploadResMain.public_id,
+      url: uploadResMain.secure_url,
+    };
 
     // Processar os arquivos das cores, se existirem
     const coresUploads = await Promise.all(coresFiles.map(async (file) => {
@@ -57,7 +66,6 @@ router.post('/', upload.fields([{ name: 'image' , maxCount: 1 }, { name: 'cores'
             resolve(result);
           }
         );
-
         fileStream.pipe(stream);
       });
 
@@ -67,21 +75,20 @@ router.post('/', upload.fields([{ name: 'image' , maxCount: 1 }, { name: 'cores'
       };
     }));
 
-    // Exemplo de criação ou atualização do produto no banco de dados
-    const produto = {
-      name: req.body.name,
-      tag: req.body.tag,
-      description: req.body.description,
-      ref: req.body.ref,
+    // Criar uma nova instância do modelo Produto com os dados fornecidos
+    const produto = new Produto({
+      name,
+      tag,
+      description,
+      ref,
       image: mainImage,
       cores: coresUploads,
-      cod: req.body.cod,
-      sizes: req.body.sizes
-    };
-
+      cod,
+      sizes
+    });
 
     // Salvar o produto no banco de dados
-    const savedProduto = await novoProduto.save();
+    const savedProduto = await produto.save();
 
     res.status(201).json({ message: 'Produto criado com sucesso', produto: savedProduto });
   } catch (error) {
@@ -89,6 +96,8 @@ router.post('/', upload.fields([{ name: 'image' , maxCount: 1 }, { name: 'cores'
     res.status(500).json({ message: 'Erro ao salvar produto', error });
   }
 });
+
+
 // Endpoint PUT para atualizar um produto existente
 
 router.put('/:id', upload.fields([{ name: 'file' }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
