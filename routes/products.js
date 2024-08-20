@@ -29,7 +29,7 @@ router.post('/', upload.fields([{ name: 'image' }, { name: 'cores', maxCount: 10
     }
 
     // Processar o arquivo principal
-    const mainFile = req.files['file'][0];
+    const mainFile = req.files['image'][0];
     const mainFileStream = streamifier.createReadStream(mainFile.buffer);
     
     const uploadResMain = await new Promise((resolve, reject) => {
