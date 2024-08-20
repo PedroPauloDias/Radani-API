@@ -23,6 +23,10 @@ const upload = multer({ storage: storage });
 
 // Endpoint POST para criar um novo produto
 
+router.post('/pedro', async (req, res) => {
+  res.status(400).json({ error: 'pedro' })
+})
+
 router.post('/', upload.fields([
   { name: 'image', maxCount: 1 },
   { name: 'cores', maxCount: 10 } // Ajuste maxCount conforme necessário
