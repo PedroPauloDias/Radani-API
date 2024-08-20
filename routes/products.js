@@ -27,10 +27,7 @@ router.post('/pedro', async (req, res) => {
   res.status(400).json({ error: 'pedro' })
 })
 
-router.post('/', upload.fields([
-  { name: 'image', maxCount: 1 },
-  { name: 'cores', maxCount: 10 } // Ajuste maxCount conforme necessário
-]), async (req, res) => {
+router.post('/', async (req, res) => {
   const { name, tag, description, ref, cod, sizes } = req.body;
   const image = req.files['image'] ? req.files['image'][0] : null;
   const coresFiles = req.files['cores'] || []; // Pode ser um array vazio se não houver arquivos
