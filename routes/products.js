@@ -11,7 +11,7 @@ const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image.jpg'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -20,11 +20,11 @@ const upload = multer({
   }
 });
 
-router.post('/', upload.fields([{ name: 'file' }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
+router.post('/', upload.fields([{ name: 'image' }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
   try {
     const { name, tag, description, ref, cod, sizes } = req.body;
 
-    if (!req.files || !req.files['file']) {
+    if (!req.files || !req.files['image']) {
       return res.status(400).send({ message: 'Nenhum arquivo principal enviado' });
     }
 
@@ -89,72 +89,82 @@ router.post('/', upload.fields([{ name: 'file' }, { name: 'cores', maxCount: 10 
 });
 // Endpoint PUT para atualizar um produto existente
 
-router.put('/:id', upload.fields([{ name: 'image' }, { name: 'cores' }]), async (req, res) => {
-  const id = req.params.id;
-  const { name, tag, description, ref, cod, sizes } = req.body;
-  const image = req.files['image'] ? req.files['image'][0] : null;
-  const coresFiles = req.files['cores'] || []; // Pode ser um array vazio se `cores` não for enviado
-
+router.put('/:id', upload.fields([{ name: 'file' }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
   try {
-    // Verificar se o produto existe
-    const produto = await Produto.findById(id);
-    if (!produto) {
-      return res.status(404).json({ message: "Produto não encontrado pelo ID" });
+    const produtoId = req.params.id;
+    const { name, tag, description, ref, cod, sizes } = req.body;
+
+    if (!produtoId) {
+      return res.status(400).send({ message: 'ID do produto não fornecido' });
     }
 
-    // Se há uma imagem principal enviada, faça o upload para o Cloudinary
-    if (image) {
-      const uploadRes = await cloudinary.uploader.upload(image.path, {
-        folder: "produtos",
-        upload_preset: "radani_conf"
+    // Atualizar o produto
+    const produto = await Produto.findById(produtoId);
+
+    if (!produto) {
+      return res.status(404).send({ message: 'Produto não encontrado' });
+    }
+
+    // Processar o arquivo principal se presente
+    if (req.files && req.files['file']) {
+      const mainFile = req.files['file'][0];
+      const mainFileStream = streamifier.createReadStream(mainFile.buffer);
+      
+      const uploadResMain = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream({ folder: 'produtos', upload_preset: 'radani_conf' }, (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        });
+        mainFileStream.pipe(stream);
       });
 
       produto.image = {
-        public_id: uploadRes.public_id,
-        url: uploadRes.secure_url,
+        public_id: uploadResMain.public_id,
+        url: uploadResMain.secure_url,
       };
-
-      // Remover o arquivo local após o upload para o Cloudinary
-      fs.unlinkSync(image.path);
     }
 
-    // Se há imagens adicionais (cores) enviadas, faça o upload para o Cloudinary e atualize o array cores
-    if (coresFiles.length > 0) {
+    // Processar os arquivos das cores se presentes
+    if (req.files && req.files['cores']) {
+      const coresFiles = req.files['cores'];
       const coresUploads = await Promise.all(coresFiles.map(async (file) => {
-        const uploadRes = await cloudinary.uploader.upload(file.path, {
-          folder: "produtos",
-          upload_preset: "radani_conf"
+        const fileStream = streamifier.createReadStream(file.buffer);
+        const uploadRes = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream({ folder: 'produtos', upload_preset: 'radani_conf' }, (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          });
+          fileStream.pipe(stream);
         });
-
-        // Remover o arquivo local após o upload para o Cloudinary
-        fs.unlinkSync(file.path);
-
         return {
           public_id: uploadRes.public_id,
           url: uploadRes.secure_url,
         };
       }));
-
       produto.cores = coresUploads;
     }
 
-    // Atualizar os outros campos
-    if (name) produto.name = name;
-    if (tag) produto.tag = tag;
-    if (description) produto.description = description;
-    if (ref) produto.ref = ref;
-    if (cod) produto.cod = cod;
-    if (sizes) produto.sizes = sizes;
+    // Atualizar outros campos
+    produto.name = name || produto.name;
+    produto.tag = tag || produto.tag;
+    produto.description = description || produto.description;
+    produto.ref = ref || produto.ref;
+    produto.cod = cod || produto.cod;
+    produto.sizes = sizes || produto.sizes;
 
-    // Salvar o produto atualizado no MongoDB
-    await produto.save();
+    // Salvar as alterações no banco de dados
+    const updatedProduto = await produto.save();
 
-    // Retornar o produto atualizado
-    res.json({ message: "Produto atualizado com sucesso", produto });
-
+    res.status(200).json({ message: 'Produto atualizado com sucesso', produto: updatedProduto });
   } catch (error) {
     console.error("Erro ao atualizar produto:", error);
-    res.status(500).json({ message: "Erro ao atualizar o produto" });
+    res.status(500).json({ message: 'Erro ao atualizar produto', error });
   }
 });
 
