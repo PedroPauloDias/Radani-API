@@ -9,8 +9,8 @@ const  productsRoute = require("./routes/products");
 
 const app = express();
 
-app.use(express.json());
- 
+app.use(express.json()); // Para manipular JSON
+app.use(express.urlencoded({ extended: true })); 
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -73,6 +73,9 @@ const Categoria = mongoose.model('Categoria', {
   image: String,
  
 });
+
+
+
 
 
 

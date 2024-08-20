@@ -5,94 +5,88 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const router = express.Router();
+const streamifier = require('streamifier');
 
-const uploadDir = 'uploads/'
-
-// Configuração do multer para upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix);
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Tipo de arquivo não permitido'), false);
+    }
   }
 });
 
-const upload = multer({ storage: storage });
+router.post('/', upload.fields([{ name: 'file' }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
+  try {
+    const { name, tag, description, ref, cod, sizes } = req.body;
 
-// Endpoint POST para criar um novo produto
+    if (!req.files || !req.files['file']) {
+      return res.status(400).send({ message: 'Nenhum arquivo principal enviado' });
+    }
 
-router.post('/pedro', async (req, res) => {
-  res.status(400).json({ error: 'pedro' })
-})
+    // Processar o arquivo principal
+    const mainFile = req.files['file'][0];
+    const mainFileStream = streamifier.createReadStream(mainFile.buffer);
+    
+    const uploadResMain = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream({ folder: 'produtos', upload_preset: 'radani_conf' }, (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      });
+      mainFileStream.pipe(stream);
+    });
 
-router.post('/', upload.fields([
-  { name: 'image', maxCount: 1 },
-  { name: 'cores', maxCount: 10 } // Ajuste conforme necessário
-]), async (req, res) => {  const { name, tag, description, ref, cod, sizes } = req.body;
-  const image = req.files && req.files['image'] ? req.files['image'][0] : null;
-  // const coresFiles = req.files['cores'] || []; // Pode ser um array vazio se não houver arquivos
+    // Processar os arquivos das cores, se existirem
+    const coresFiles = req.files['cores'] || [];
+    const coresUploads = await Promise.all(coresFiles.map(async (file) => {
+      const fileStream = streamifier.createReadStream(file.buffer);
+      const uploadRes = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream({ folder: 'produtos', upload_preset: 'radani_conf' }, (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        });
+        fileStream.pipe(stream);
+      });
+      return {
+        public_id: uploadRes.public_id,
+        url: uploadRes.secure_url,
+      };
+    }));
 
-  if (!image) {
-    return res.status(400).json({ message: 'Imagem é obrigatória' });
-  }
-
-  // try {
-  //   // Upload da imagem principal para o Cloudinary
-  //   const uploadRes = await cloudinary.uploader.upload(image.path, {
-  //     folder: "produtos",
-  //     upload_preset: "radani_conf"
-  //   });
-
-  //   // Upload das imagens adicionais (cores) para o Cloudinary, se existirem
-  //   const coresUploads = coresFiles.length > 0 ? await Promise.all(coresFiles.map(async (file) => {
-  //     const uploadRes = await cloudinary.uploader.upload(file.path, {
-  //       folder: "produtos",
-  //       upload_preset: "radani_conf"
-  //     });
-  //     fs.unlinkSync(file.path);
-  //     return {
-  //       public_id: uploadRes.public_id,
-  //       url: uploadRes.secure_url,
-  //     };
-  //   })) : [];
-
-    // const novoProduto = new Produto({
-    //   name,
-    //   tag,
-    //   description,
-    //   ref,
-    //   cod,
-    //   sizes,
-    //   image: {
-    //     public_id: uploadRes.public_id,
-    //     url: uploadRes.secure_url,
-    //   },
-    //   cores: coresUploads,
-    // });
-
-    // const savedProduct = await novoProduto.save();
-    console.log({ name,
+    // Criar um novo produto
+    const novoProduto = new Produto({
+      name,
       tag,
       description,
       ref,
       cod,
       sizes,
-  
-      cores: coresUploads})
+      image: {
+        public_id: uploadResMain.public_id,
+        url: uploadResMain.secure_url,
+      },
+      cores: coresUploads,
+    });
 
-    // fs.unlinkSync(image.path);
+    // Salvar o produto no banco de dados
+    const savedProduto = await novoProduto.save();
 
-    // res.status(201).json(savedProduct);
-
-  // } catch (error) {
-  //   console.error("Error ao salvar produto:", error);
-  //   res.status(500).json({ message: "Erro ao salvar produto" });
-  // }
+    res.status(201).json({ message: 'Produto criado com sucesso', produto: savedProduto });
+  } catch (error) {
+    console.error("Erro ao salvar produto:", error);
+    res.status(500).json({ message: 'Erro ao salvar produto', error });
+  }
 });
-
-
 // Endpoint PUT para atualizar um produto existente
 
 router.put('/:id', upload.fields([{ name: 'image' }, { name: 'cores' }]), async (req, res) => {
