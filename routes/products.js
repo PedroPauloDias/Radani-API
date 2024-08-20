@@ -59,8 +59,22 @@ router.post('/', upload.fields([
       };
     })) : [];
 
-    const novoProduto = new Produto({
-      name,
+    // const novoProduto = new Produto({
+    //   name,
+    //   tag,
+    //   description,
+    //   ref,
+    //   cod,
+    //   sizes,
+    //   image: {
+    //     public_id: uploadRes.public_id,
+    //     url: uploadRes.secure_url,
+    //   },
+    //   cores: coresUploads,
+    // });
+
+    // const savedProduct = await novoProduto.save();
+    console.log({ name,
       tag,
       description,
       ref,
@@ -70,14 +84,11 @@ router.post('/', upload.fields([
         public_id: uploadRes.public_id,
         url: uploadRes.secure_url,
       },
-      cores: coresUploads,
-    });
+      cores: coresUploads})
 
-    const savedProduct = await novoProduto.save();
+    // fs.unlinkSync(image.path);
 
-    fs.unlinkSync(image.path);
-
-    res.status(201).json(savedProduct);
+    // res.status(201).json(savedProduct);
 
   } catch (error) {
     console.error("Error ao salvar produto:", error);
