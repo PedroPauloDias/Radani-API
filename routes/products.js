@@ -23,13 +23,16 @@ const upload = multer({ storage: storage });
 
 // Endpoint POST para criar um novo produto
 
-router.post('/', upload.fields([{ name: 'image' }, { name: 'cores' }]), async (req, res) => {
+router.post('/', upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'cores', maxCount: 10 } // Ajuste maxCount conforme necessário
+]), async (req, res) => {
   const { name, tag, description, ref, cod, sizes } = req.body;
   const image = req.files['image'] ? req.files['image'][0] : null;
   const coresFiles = req.files['cores'] || []; // Pode ser um array vazio se não houver arquivos
 
   if (!image) {
-    return res.status(400).json({ message: 'Imagem é obrigatório' });
+    return res.status(400).json({ message: 'Imagem é obrigatória' });
   }
 
   try {
@@ -45,7 +48,6 @@ router.post('/', upload.fields([{ name: 'image' }, { name: 'cores' }]), async (r
         folder: "produtos",
         upload_preset: "radani_conf"
       });
-      // Remover o arquivo local após o upload
       fs.unlinkSync(file.path);
       return {
         public_id: uploadRes.public_id,
@@ -53,7 +55,6 @@ router.post('/', upload.fields([{ name: 'image' }, { name: 'cores' }]), async (r
       };
     })) : [];
 
-    // Criação do produto
     const novoProduto = new Produto({
       name,
       tag,
@@ -65,16 +66,13 @@ router.post('/', upload.fields([{ name: 'image' }, { name: 'cores' }]), async (r
         public_id: uploadRes.public_id,
         url: uploadRes.secure_url,
       },
-      cores: coresUploads, // Adiciona o array cores aqui
+      cores: coresUploads,
     });
 
-    // Salvar no MongoDB
     const savedProduct = await novoProduto.save();
-    
-    // Remover o arquivo local da imagem principal após o upload
+
     fs.unlinkSync(image.path);
 
-    // Responder com o produto salvo
     res.status(201).json(savedProduct);
 
   } catch (error) {
@@ -82,6 +80,7 @@ router.post('/', upload.fields([{ name: 'image' }, { name: 'cores' }]), async (r
     res.status(500).json({ message: "Erro ao salvar produto" });
   }
 });
+
 
 // Endpoint PUT para atualizar um produto existente
 
