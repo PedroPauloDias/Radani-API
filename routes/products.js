@@ -23,6 +23,7 @@ const upload = multer({
 router.post('/', upload.fields([{ name: 'image' , maxCount: 1 }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
   try {
     const { name, tag, description, ref, cod, sizes } = req.body;
+    const coresFiles = req.files['cores'] || [];  
 
     if (!req.files || !req.files['image']) {
       return res.status(400).send({ message: 'Nenhum arquivo principal enviado' });
