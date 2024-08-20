@@ -29,7 +29,7 @@ router.post('/pedro', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const { name, tag, description, ref, cod, sizes } = req.body;
-  const image = req.files['image'] ? req.files['image'][0] : null;
+  const image = req.files && req.files['image'] ? req.files['image'][0] : null;
   const coresFiles = req.files['cores'] || []; // Pode ser um array vazio se não houver arquivos
 
   if (!image) {
