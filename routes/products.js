@@ -39,25 +39,25 @@ router.post('/', upload.fields([
     return res.status(400).json({ message: 'Imagem é obrigatória' });
   }
 
-  try {
-    // Upload da imagem principal para o Cloudinary
-    const uploadRes = await cloudinary.uploader.upload(image.path, {
-      folder: "produtos",
-      upload_preset: "radani_conf"
-    });
+  // try {
+  //   // Upload da imagem principal para o Cloudinary
+  //   const uploadRes = await cloudinary.uploader.upload(image.path, {
+  //     folder: "produtos",
+  //     upload_preset: "radani_conf"
+  //   });
 
-    // Upload das imagens adicionais (cores) para o Cloudinary, se existirem
-    const coresUploads = coresFiles.length > 0 ? await Promise.all(coresFiles.map(async (file) => {
-      const uploadRes = await cloudinary.uploader.upload(file.path, {
-        folder: "produtos",
-        upload_preset: "radani_conf"
-      });
-      fs.unlinkSync(file.path);
-      return {
-        public_id: uploadRes.public_id,
-        url: uploadRes.secure_url,
-      };
-    })) : [];
+  //   // Upload das imagens adicionais (cores) para o Cloudinary, se existirem
+  //   const coresUploads = coresFiles.length > 0 ? await Promise.all(coresFiles.map(async (file) => {
+  //     const uploadRes = await cloudinary.uploader.upload(file.path, {
+  //       folder: "produtos",
+  //       upload_preset: "radani_conf"
+  //     });
+  //     fs.unlinkSync(file.path);
+  //     return {
+  //       public_id: uploadRes.public_id,
+  //       url: uploadRes.secure_url,
+  //     };
+  //   })) : [];
 
     // const novoProduto = new Produto({
     //   name,
@@ -80,20 +80,17 @@ router.post('/', upload.fields([
       ref,
       cod,
       sizes,
-      image: {
-        public_id: uploadRes.public_id,
-        url: uploadRes.secure_url,
-      },
+  
       cores: coresUploads})
 
     // fs.unlinkSync(image.path);
 
     // res.status(201).json(savedProduct);
 
-  } catch (error) {
-    console.error("Error ao salvar produto:", error);
-    res.status(500).json({ message: "Erro ao salvar produto" });
-  }
+  // } catch (error) {
+  //   console.error("Error ao salvar produto:", error);
+  //   res.status(500).json({ message: "Erro ao salvar produto" });
+  // }
 });
 
 
