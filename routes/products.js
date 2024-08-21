@@ -102,7 +102,7 @@ router.post('/', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'cores',
 });
 // Endpoint PUT para atualizar um produto existente
 
-router.put('/:id', upload.fields([{ name: 'file' }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
+router.put('/:id', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
   try {
     const produtoId = req.params.id;
     const { name, tag, description, ref, cod, sizes } = req.body;
@@ -119,8 +119,8 @@ router.put('/:id', upload.fields([{ name: 'file' }, { name: 'cores', maxCount: 1
     }
 
     // Processar o arquivo principal se presente
-    if (req.files && req.files['file']) {
-      const mainFile = req.files['file'][0];
+    if (req.files && req.files['image']) {
+      const mainFile = req.files['image'][0];
       const mainFileStream = streamifier.createReadStream(mainFile.buffer);
 
       const uploadResMain = await new Promise((resolve, reject) => {
