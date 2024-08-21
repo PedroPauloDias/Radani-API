@@ -176,7 +176,23 @@ router.put('/:id', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'cores
           }
         }));
     
+        // Log para verificar coresUploads
+        console.log('Cores uploads:', coresUploads);
+    
+        // Remove os arquivos antigos se necessário
+        const currentCores = produto.cores.map(core => core.public_id);
+        const newCores = coresUploads.map(core => core.public_id);
+        const removedCores = currentCores.filter(currentCore => !newCores.includes(currentCore));
+    
+        // Log para verificar arquivos removidos
+        console.log('Arquivos de cores removidos:', removedCores);
+    
+        // Atualizar o produto com as novas cores
         produto.cores = coresUploads;
+    
+        // Se precisar remover os arquivos antigos do Cloudinary, faça isso aqui
+        // (Certifique-se de adicionar a lógica de remoção, se necessário)
+    
       } catch (error) {
         console.error('Erro ao processar arquivos de cores:', error);
         return res.status(500).json({ message: 'Erro ao fazer upload dos arquivos de cores', error });
