@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 require('dotenv').config();
 const cors = require('cors');
 const { ObjectId } = require('mongoose').Types;
-// const cloudinary = require("./utils/cloudinary");
+const Produto = require("./models/product");
 const  productsRoute = require("./routes/products");
 
 
@@ -11,10 +11,9 @@ const app = express();
 
 app.use(express.json()); // Para manipular JSON
 app.use(express.urlencoded({ extended: true })); 
-
 const corsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = ['http://localhost:3000','http://localhost:3001', 'https://radani.vercel.app','https://adm-radani.vercel.app', 'https://radani-conf.vercel.app']
+    const allowedOrigins = ['http://localhost:3000','http://localhost:3001/', 'https://radani.vercel.app','https://adm-radani.vercel.app', 'https://radani-conf.vercel.app']
     if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
       callback(null, true);
     } else {
