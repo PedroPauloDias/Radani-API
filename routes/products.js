@@ -140,27 +140,47 @@ router.put('/:id', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'cores
       };
     }
 
-    // Processar os arquivos das cores se presentes
+    // Processar os arquivos das cores se presente
     if (req.files && req.files['cores']) {
       const coresFiles = req.files['cores'];
-      const coresUploads = await Promise.all(coresFiles.map(async (file) => {
-        const fileStream = streamifier.createReadStream(file.buffer);
-        const uploadRes = await new Promise((resolve, reject) => {
-          const stream = cloudinary.uploader.upload_stream({ folder: 'produtos', upload_preset: 'radani_conf' }, (error, result) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(result);
-            }
-          });
-          fileStream.pipe(stream);
-        });
-        return {
-          public_id: uploadRes.public_id,
-          url: uploadRes.secure_url,
-        };
-      }));
-      produto.cores = coresUploads;
+    
+      try {
+        const coresUploads = await Promise.all(coresFiles.map(async (file, index) => {
+          console.log(`Processando arquivo de cor ${index + 1}:`, file.originalname);
+    
+          const fileStream = streamifier.createReadStream(file.buffer);
+    
+          try {
+            const uploadRes = await new Promise((resolve, reject) => {
+              const stream = cloudinary.uploader.upload_stream(
+                { folder: 'produtos', upload_preset: 'radani_conf' },
+                (error, result) => {
+                  if (error) {
+                    console.error(`Erro ao fazer upload do arquivo de cor ${index + 1}:`, error);
+                    reject(error);
+                  } else {
+                    resolve(result);
+                  }
+                }
+              );
+              fileStream.pipe(stream);
+            });
+    
+            return {
+              public_id: uploadRes.public_id,
+              url: uploadRes.secure_url,
+            };
+          } catch (error) {
+            console.error(`Erro ao processar arquivo de cor ${index + 1}:`, error);
+            throw error; // Re-throw to handle this error later
+          }
+        }));
+    
+        produto.cores = coresUploads;
+      } catch (error) {
+        console.error('Erro ao processar arquivos de cores:', error);
+        return res.status(500).json({ message: 'Erro ao fazer upload dos arquivos de cores', error });
+      }
     }
 
     // Atualizar outros campos
