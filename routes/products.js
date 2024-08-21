@@ -122,7 +122,7 @@ router.put('/:id', upload.fields([{ name: 'file' }, { name: 'cores', maxCount: 1
     if (req.files && req.files['file']) {
       const mainFile = req.files['file'][0];
       const mainFileStream = streamifier.createReadStream(mainFile.buffer);
-      
+
       const uploadResMain = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream({ folder: 'produtos', upload_preset: 'radani_conf' }, (error, result) => {
           if (error) {
@@ -180,7 +180,6 @@ router.put('/:id', upload.fields([{ name: 'file' }, { name: 'cores', maxCount: 1
     res.status(500).json({ message: 'Erro ao atualizar produto', error });
   }
 });
-
 
 
 // Endpoint GET para listar produtos

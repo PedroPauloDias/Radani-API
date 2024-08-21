@@ -6,7 +6,6 @@ const { ObjectId } = require('mongoose').Types;
 const Produto = require("./models/product");
 const  productsRoute = require("./routes/products");
 
-
 const app = express();
 
 app.use(express.json()); // Para manipular JSON
