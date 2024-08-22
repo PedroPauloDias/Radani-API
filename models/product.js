@@ -5,7 +5,7 @@ const ProdutoSchema = new mongoose.Schema({
   name: String,
   tag: String,
   description: String,
-  ref: String,
+  ref: Number,
   image: {
     public_id: {
       type: String,
