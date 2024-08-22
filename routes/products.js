@@ -18,6 +18,216 @@ router.get('/', async (req, res) => {
   }
 });
 
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image.jpg'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Tipo de arquivo não permitido'), false);
+    }
+  }
+});
+
+
+
+// Endpoint para criar um produto
+router.post('/', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
+  try {
+    const { name, tag, description, ref, cod, sizes } = req.body;
+    const coresFiles = req.files['cores'] || [];  
+
+    if (!req.files || !req.files['image']) {
+      return res.status(400).send({ message: 'Nenhum arquivo principal enviado' });
+    }
+
+    // Processar o arquivo principal
+    const mainFile = req.files['image'][0];
+    const mainFileStream = streamifier.createReadStream(mainFile.buffer);
+
+    const uploadResMain = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream({ folder: 'produtos', upload_preset: 'radani_conf' }, (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      });
+      mainFileStream.pipe(stream);
+    });
+
+    const mainImage = {
+      public_id: uploadResMain.public_id,
+      url: uploadResMain.secure_url,
+    };
+
+    // Processar os arquivos das cores, se existirem
+    const coresUploads = await Promise.all(coresFiles.map(async (file, index) => {
+      console.log(`Processando arquivo de cores ${index + 1}`);
+
+      const fileStream = streamifier.createReadStream(file.buffer);
+      const uploadRes = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'produtos', upload_preset: 'radani_conf' },
+          (error, result) => {
+            if (error) {
+              return reject(error);
+            }
+            resolve(result);
+          }
+        );
+        fileStream.pipe(stream);
+      });
+
+      return {
+        public_id: uploadRes.public_id,
+        url: uploadRes.secure_url,
+      };
+    }));
+
+    // Log para verificar coresUploads
+    console.log('Cores uploads:', coresUploads);
+
+    // Criar uma nova instância do modelo Produto com os dados fornecidos
+    const produto = new Produto({
+      name,
+      tag,
+      description,
+      ref,
+      image: mainImage,
+      cores: coresUploads,
+      cod,
+      sizes
+    });
+
+    // Salvar o produto no banco de dados
+    const savedProduto = await produto.save();
+
+    res.status(201).json({ message: 'Produto criado com sucesso', produto: savedProduto });
+  } catch (error) {
+    console.error("Erro ao salvar produto:", error);
+    res.status(500).json({ message: 'Erro ao salvar produto', error });
+  }
+});
+// Endpoint PUT para atualizar um produto existente
+
+router.put('/:id', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'cores', maxCount: 10 }]), async (req, res) => {
+  try {
+    const produtoId = req.params.id;
+    const { name, tag, description, ref, cod, sizes } = req.body;
+
+    if (!produtoId) {
+      return res.status(400).send({ message: 'ID do produto não fornecido' });
+    }
+
+    // Atualizar o produto
+    const produto = await Produto.findById(produtoId);
+
+    if (!produto) {
+      return res.status(404).send({ message: 'Produto não encontrado' });
+    }
+
+    // Processar o arquivo principal se presente
+    if (req.files && req.files['image']) {
+      const mainFile = req.files['image'][0];
+      const mainFileStream = streamifier.createReadStream(mainFile.buffer);
+
+      const uploadResMain = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream({ folder: 'produtos', upload_preset: 'radani_conf' }, (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        });
+        mainFileStream.pipe(stream);
+      });
+
+      produto.image = {
+        public_id: uploadResMain.public_id,
+        url: uploadResMain.secure_url,
+      };
+    }
+
+    // Processar os arquivos das cores se presente
+    if (req.files && req.files['cores']) {
+      const coresFiles = req.files['cores'];
+
+      try {
+        const coresUploads = await Promise.all(coresFiles.map(async (file, index) => {
+          console.log(`Processando arquivo de cor ${index + 1}:`, file.originalname);
+
+          const fileStream = streamifier.createReadStream(file.buffer);
+
+          try {
+            const uploadRes = await new Promise((resolve, reject) => {
+              const stream = cloudinary.uploader.upload_stream(
+                { folder: 'produtos', upload_preset: 'radani_conf' },
+                (error, result) => {
+                  if (error) {
+                    console.error(`Erro ao fazer upload do arquivo de cor ${index + 1}:`, error);
+                    reject(error);
+                  } else {
+                    resolve(result);
+                  }
+                }
+              );
+              fileStream.pipe(stream);
+            });
+
+            return {
+              public_id: uploadRes.public_id,
+              url: uploadRes.secure_url,
+            };
+          } catch (error) {
+            console.error(`Erro ao processar arquivo de cor ${index + 1}:`, error);
+            throw error; // Re-throw to handle this error later
+          }
+        }));
+
+        // Log para verificar coresUploads
+        console.log('Cores uploads:', coresUploads);
+
+        // Remove os arquivos antigos se necessário
+        const currentCores = produto.cores.map(core => core.public_id);
+        const newCores = coresUploads.map(core => core.public_id);
+        const removedCores = currentCores.filter(currentCore => !newCores.includes(currentCore));
+
+        // Log para verificar arquivos removidos
+        console.log('Arquivos de cores removidos:', removedCores);
+
+        // Atualizar o produto com as novas cores
+        produto.cores = coresUploads;
+
+        // Se precisar remover os arquivos antigos do Cloudinary, faça isso aqui
+        // (Certifique-se de adicionar a lógica de remoção, se necessário)
+
+      } catch (error) {
+        console.error('Erro ao processar arquivos de cores:', error);
+        return res.status(500).json({ message: 'Erro ao fazer upload dos arquivos de cores', error });
+      }
+    }
+
+    // Atualizar outros campos
+    produto.name = name || produto.name;
+    produto.tag = tag || produto.tag;
+    produto.description = description || produto.description;
+    produto.ref = ref || produto.ref;
+    produto.cod = cod || produto.cod;
+    produto.sizes = sizes || produto.sizes;
+
+    // Salvar as alterações no banco de dados
+    const updatedProduto = await produto.save();
+
+    res.status(200).json({ message: 'Produto atualizado com sucesso', produto: updatedProduto });
+  } catch (error) {
+    console.error("Erro ao atualizar produto:", error);
+    res.status(500).json({ message: 'Erro ao atualizar produto', error });
+  }
+});
+
 // Endpoint GET para buscar produtos por query
 router.get('/busca/:query', async (req, res) => {
   const query = req.params.query;
